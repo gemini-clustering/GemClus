@@ -34,12 +34,12 @@ or
 
 ```bibtex
 @inproceedings{ohl2022generalised,
-    title={Generalised Mutual Information for Discriminative Clustering},
-    author={Louis Ohl and Pierre-Alexandre Mattei and Charles Bouveyron and Warith Harchaoui and Micka{\"e}l Leclercq and Arnaud Droit and Frederic Precioso},
-    booktitle={Advances in Neural Information Processing Systems},
-    editor={Alice H. Oh and Alekh Agarwal and Danielle Belgrave and Kyunghyun Cho},
-    year={2022},
-    url={https://openreview.net/forum?id=0Oy3PiA-aDp}
+title={Generalised Mutual Information for Discriminative Clustering},
+author={Louis Ohl and Pierre-Alexandre Mattei and Charles Bouveyron and Warith Harchaoui and Micka{\"e}l Leclercq and Arnaud Droit and Frederic Precioso},
+booktitle={Advances in Neural Information Processing Systems},
+editor={Alice H. Oh and Alekh Agarwal and Danielle Belgrave and Kyunghyun Cho},
+year={2022},
+url={https://openreview.net/forum?id=0Oy3PiA-aDp}
 }
 ```
 
