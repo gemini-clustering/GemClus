@@ -34,7 +34,7 @@ Doing discriminative clustering
 The package respects the `scikit-learn` conventions for models API. Thus, doing clustering with the GEMINI looks like::
 
     # Import the model and a simple datasets
-    from gemini.mlp import MLPMMD
+    from gemclus.mlp import MLPMMD
     from sklearn.datasets import load_iris
     X,y = load_iris(return_X_y=True)
 

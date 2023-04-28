@@ -205,7 +205,7 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
         Returns
         -------
         best_weights: list of ndarray of various shapes of length 5
-            The list containing the best weights during the path. Sequentially: W1_, W2_, W_skip_, b1_, b2_
+            The list containing the best weights during the path. Sequentially: `W1_`, `W2_`, `W_skip_`, `b1_`, `b2_`
         geminis: list of float of length T
             The history of the gemclus scores as the penalty alpha was increased.
         group_penalties: list of float of length T
@@ -452,7 +452,7 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
         Returns
         -------
         best_weights: list of ndarray of various shapes of length 5
-            The list containing the best weights during the path. Sequentially: W1_, W2_, W_skip_, b1_, b2_
+            The list containing the best weights during the path. Sequentially: `W_`, `b_`
         geminis: list of float of length T
             The history of the gemclus scores as the penalty alpha was increased.
         group_penalties: list of float of length T

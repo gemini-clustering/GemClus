@@ -5,6 +5,7 @@
 
 .. autoclass:: {{ objname }}
    :members:
+   :inherited-members: set_params, get_params
 
    {% block methods %}
    .. automethod:: __init__

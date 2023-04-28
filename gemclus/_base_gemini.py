@@ -187,12 +187,14 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
 
     def fit(self, X, y=None):
         """Compute GEMINI clustering.
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Training instances to cluster.
         y : Ignored
             Not used, present here for API consistency by convention.
+
         Returns
         -------
         self : object
@@ -245,12 +247,14 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
 
     def fit_predict(self, X, y=None):
         """Compute GEMINI clustering and returns the predicted clusters.
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Training instances to cluster.
         y : Ignored
             Not used, present here for API consistency by convention.
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
@@ -263,11 +267,13 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         Probability estimates that are the output of the neural network p(y|x).
         The returned estimates for all classes are ordered by the
         label of classes.
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Vector to be scored, where `n_samples` is the number of samples and
             `n_features` is the number of features.
+
         Returns
         -------
         T : array-like of shape (n_samples, n_clusters)
