@@ -26,8 +26,8 @@ VERSION = __version__
 INSTALL_REQUIRES = ['numpy', 'scipy', 'scikit-learn', 'pot>=0.8.1']
 CLASSIFIERS = ['Intended Audience :: Science/Research',
                'Intended Audience :: Developers',
-               'Intended Audience :: Education'
-               'License :: OSI Approved :: GPLv3',
+               'Intended Audience :: Education',
+               'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
                'Programming Language :: Python',
                'Topic :: Utilities',
                'Topic :: Scientific/Engineering',
