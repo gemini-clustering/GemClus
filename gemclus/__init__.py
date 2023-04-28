@@ -1,4 +1,4 @@
-from gemclus import sparse, linear, mlp
+from gemclus import sparse, linear, mlp, data
 
-__all__ = ['linear', 'mlp', 'sparse', '__version__']
+__all__ = ['linear', 'mlp', 'sparse', 'data', '__version__']
 __version__ = '0.0.1'

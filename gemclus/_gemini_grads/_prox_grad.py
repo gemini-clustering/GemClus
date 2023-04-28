@@ -67,8 +67,7 @@ def linear_prox_grad(W, alpha):
     W_norms = np.linalg.norm(W, axis=1, keepdims=True)  # Shape [d,1]
 
     # Group lasso soft thresholding
-    W_normalised = W / W_norms
-    W_star = np.maximum(W_norms - alpha, 0) * W_normalised
+    W_star = np.maximum(W_norms - alpha, 0) * W / np.where(W_norms == 0, 1, W_norms)
 
     return W_star
 
