@@ -41,6 +41,9 @@ class SparseLinearMMD(_SparseLinearGEMINI, _BaseMMD):
     alpha: float, default=1e-2
         The weight of the group-lasso penalty in the optimisation scheme.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -96,13 +99,14 @@ class SparseLinearMMD(_SparseLinearGEMINI, _BaseMMD):
     }
 
     def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, kernel="linear", ovo=False,
-                 alpha=1e-2, solver="adam", verbose=False, random_state=None):
+                 alpha=1e-2, solver="adam", batch_size=None, verbose=False, random_state=None):
         _SparseLinearGEMINI.__init__(self,
                                      n_clusters=n_clusters,
                                      groups=groups,
                                      max_iter=max_iter,
                                      learning_rate=learning_rate,
                                      solver=solver,
+                                     batch_size=batch_size,
                                      verbose=verbose,
                                      random_state=random_state,
                                      alpha=alpha
@@ -114,6 +118,7 @@ class SparseLinearMMD(_SparseLinearGEMINI, _BaseMMD):
                           solver=solver,
                           kernel=kernel,
                           ovo=ovo,
+                          batch_size=batch_size,
                           verbose=verbose,
                           random_state=random_state,
                           )

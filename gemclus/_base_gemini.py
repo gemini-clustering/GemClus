@@ -38,6 +38,9 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -59,16 +62,18 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         "max_iter": [Interval(Integral, 1, None, closed="left")],
         "learning_rate": [Interval(Real, 0, None, closed="neither")],
         "solver": [StrOptions({"sgd", "adam"})],
+        "batch_size": [Interval(Integral, 1, None, closed="left"), None],
         "verbose": [bool],
         "random_state": [Interval(Integral, 0, None, closed="left"), None]
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam",
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
                  verbose=False, random_state=None):
         self.n_clusters = n_clusters
         self.max_iter = max_iter
         self.learning_rate = learning_rate
         self.solver = solver
+        self.batch_size = batch_size
         self.verbose = verbose
         self.random_state = random_state
 
@@ -211,6 +216,11 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         X = check_array(X)
         X = self._validate_data(X, accept_sparse=True, dtype=np.float64, ensure_min_samples=self.n_clusters)
 
+        if self.batch_size is None:
+            batch_size = len(X)
+        else:
+            batch_size = self.batch_size
+
         # Fix the random seed
         random_state = check_random_state(self.random_state)
 
@@ -234,10 +244,23 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
             print(f"Starting training over {self.max_iter} iterations.")
         # Now, iterate for gradient descent
         for i in range(self.max_iter):
-            y_pred = self._infer(X)
-            _, grads = self._compute_gemini(y_pred, affinity, return_grad=True)
-            grads = self._compute_grads(X, y_pred, grads)
-            self._update_weights(weights, grads)
+            # Create batches
+            j = 0
+            all_indices = random_state.permutation(len(X))
+            while j < len(X):
+                batch_indices = all_indices[j:j + batch_size]
+                X_batch = X[batch_indices]
+                if affinity is None:
+                    affinity_batch = None  # Specific case of f-div GEMINI
+                else:
+                    affinity_batch = affinity[batch_indices][:, batch_indices]
+
+                y_pred = self._infer(X_batch)
+                _, grads = self._compute_gemini(y_pred, affinity_batch, return_grad=True)
+                grads = self._compute_grads(X_batch, y_pred, grads)
+                self._update_weights(weights, grads)
+
+                j += batch_size
 
         if self.verbose:
             print("Finished")
@@ -368,6 +391,9 @@ class _BaseMMD(_BaseGEMINI, ABC):
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -386,17 +412,18 @@ class _BaseMMD(_BaseGEMINI, ABC):
     """
     _parameter_constraints: dict = {
         **_BaseGEMINI._parameter_constraints,
-        "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS)+["precomputed"])), callable],
+        "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS) + ["precomputed"])), callable],
         "ovo": [bool]
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, kernel="linear", solver="adam", ovo=False,
-                 verbose=False, random_state=None):
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, kernel="linear", batch_size=None,
+                 solver="adam", ovo=False, verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -447,6 +474,9 @@ class _BaseWasserstein(_BaseGEMINI, ABC):
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -465,17 +495,18 @@ class _BaseWasserstein(_BaseGEMINI, ABC):
     """
     _parameter_constraints: dict = {
         **_BaseGEMINI._parameter_constraints,
-        "metric": [StrOptions(set(list(PAIRED_DISTANCES)+["precomputed"]))],
+        "metric": [StrOptions(set(list(PAIRED_DISTANCES) + ["precomputed"]))],
         "ovo": [bool]
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, metric="euclidean", ovo=False,
-                 solver="adam", verbose=False, random_state=None):
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
+                 metric="euclidean", ovo=False, verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )

@@ -15,13 +15,14 @@ class _MLPGEMINI(_BaseGEMINI, ABC):
         "hidden_dim": [Interval(Integral, 1, None, closed="left")],
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", n_hidden_dim=20,
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", n_hidden_dim=20, batch_size=None,
                  verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -93,6 +94,9 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -148,7 +152,7 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, kernel="linear", ovo=False,
-                 solver="adam", verbose=False, random_state=None):
+                 solver="adam", batch_size=None, verbose=False, random_state=None):
         _MLPGEMINI.__init__(
             self,
             n_clusters=n_clusters,
@@ -156,6 +160,7 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
             learning_rate=learning_rate,
             n_hidden_dim=n_hidden_dim,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -166,6 +171,7 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
             learning_rate=learning_rate,
             solver=solver,
             ovo=ovo,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state,
             kernel=kernel
@@ -203,6 +209,9 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
 
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
+
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
 
     verbose: bool, default=False
         Whether to print progress messages to stdout
@@ -259,7 +268,7 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, metric="euclidean", ovo=False,
-                 solver="adam", verbose=False, random_state=None):
+                 solver="adam", batch_size=None, verbose=False, random_state=None):
         _MLPGEMINI.__init__(
             self,
             n_clusters=n_clusters,
@@ -267,6 +276,7 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
             learning_rate=learning_rate,
             n_hidden_dim=n_hidden_dim,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -277,6 +287,7 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
             learning_rate=learning_rate,
             solver=solver,
             ovo=ovo,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state,
             metric=metric

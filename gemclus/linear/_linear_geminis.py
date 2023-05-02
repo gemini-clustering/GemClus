@@ -14,13 +14,14 @@ class _LinearGEMINI(_BaseGEMINI, ABC):
         **_BaseGEMINI._parameter_constraints,
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam",
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
                  verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -78,6 +79,9 @@ class LinearMMD(_LinearGEMINI, _BaseMMD):
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -127,7 +131,7 @@ class LinearMMD(_LinearGEMINI, _BaseMMD):
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, kernel="linear", solver="adam", ovo=False,
-                 verbose=False, random_state=None):
+                 batch_size=None, verbose=False, random_state=None):
         _BaseMMD.__init__(
             self,
             n_clusters=n_clusters,
@@ -135,6 +139,7 @@ class LinearMMD(_LinearGEMINI, _BaseMMD):
             learning_rate=learning_rate,
             ovo=ovo,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state,
             kernel=kernel
@@ -166,6 +171,9 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
 
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
+
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
 
     verbose: bool, default=False
         Whether to print progress messages to stdout
@@ -216,7 +224,7 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, metric="euclidean", ovo=False,
-                 solver="adam", verbose=False, random_state=None):
+                 solver="adam", batch_size=None, verbose=False, random_state=None):
         _BaseWasserstein.__init__(
             self,
             n_clusters=n_clusters,
@@ -224,6 +232,7 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
             learning_rate=learning_rate,
             solver=solver,
             ovo=ovo,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state,
             metric=metric
@@ -254,6 +263,9 @@ class RIM(_LinearGEMINI):
 
         - 'sgd' refers to stochastic gradient descent.
         - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
+
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
 
     verbose: bool, default=False
         Whether to print progress messages to stdout
@@ -304,13 +316,14 @@ class RIM(_LinearGEMINI):
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, reg=1,
-                 solver="adam", verbose=False, random_state=None):
+                 solver="adam", batch_size=None, verbose=False, random_state=None):
         _LinearGEMINI.__init__(
             self,
             n_clusters=n_clusters,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )

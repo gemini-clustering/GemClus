@@ -50,6 +50,9 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
     M: float, default=10 The hierarchy coefficient that controls the relative strength between the group-lasso
         penalty of the skip connection and the sparsity of the first layer of the MLP.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -112,8 +115,7 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
     }
 
     def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, kernel="linear",
-                 M=10,
-                 alpha=1e-2, ovo=False, solver="adam", verbose=False, random_state=None):
+                 M=10, batch_size=None, alpha=1e-2, ovo=False, solver="adam", verbose=False, random_state=None):
         _SparseMLPGEMINI.__init__(
             self,
             n_clusters=n_clusters,
@@ -122,6 +124,7 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
             learning_rate=learning_rate,
             n_hidden_dim=n_hidden_dim,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state,
             M=M,
@@ -135,6 +138,7 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
             kernel=kernel,
             ovo=ovo,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state,
         )

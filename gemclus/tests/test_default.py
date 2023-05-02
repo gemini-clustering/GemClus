@@ -110,3 +110,16 @@ def test_all_estimators(estimator):
             # But since GEMINI may have fewer clusters, this test will never be satisfied
             continue
         check(clf)
+
+@pytest.mark.parametrize(
+    "estimator",
+    [MLPMMD, LinearMMD, SparseMLPMMD, SparseLinearMMD, MLPWasserstein, LinearWasserstein, RIM]
+)
+@pytest.mark.parametrize(
+    "batch_size",
+    [10,50,None]
+)
+def test_batch_size(estimator, batch_size, data):
+    clf = estimator(max_iter=5, batch_size=batch_size)
+    clf.fit(data)
+    assert hasattr(clf, "labels_")

@@ -32,7 +32,7 @@ X, y = gstm(n=200, alpha=3, df=1, random_state=0)
 
 # %%training
 
-clf = LinearWasserstein(n_clusters=4, random_state=0)
+clf = LinearWasserstein(n_clusters=4, random_state=0, batch_size=50)
 y_pred = clf.fit_predict(X)
 
 ##########################################################################

@@ -4,6 +4,7 @@ from numbers import Real
 
 import numpy as np
 from sklearn.neural_network._stochastic_optimizers import SGDOptimizer
+from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval
 from sklearn.utils.extmath import softmax
 
@@ -19,6 +20,132 @@ def check_groups(groups, n_features_in):
             all_indices.extend(list(g))
         assert len(all_indices) == n_features_in and set(all_indices) == set(range(n_features_in)), \
             f"Groups must form a partition of the set of variable indices"
+
+def compute_val_score(clf,X, batch_size):
+    validation_gemini = 0  # clf.score(X)
+    validation_l1 = clf._group_lasso_penalty() * clf.alpha
+    j = 0
+    while j < len(X):
+        X_batch = X[j:j + batch_size]
+        validation_gemini += clf.score(X_batch) * len(X_batch)
+        j += batch_size
+    validation_gemini /= len(X)
+    return validation_gemini, validation_l1
+
+def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
+          early_stopping_factor=0.99, max_patience=10):
+    clf._validate_data(X)
+    check_groups(clf.groups, X.shape[1])
+    if alpha_multiplier <= 1:
+        warnings.warn(f"The alpha multiplier is lower or equal to 1. This will not increase alpha during the path. "
+                      f"Setting it again to default parameters: 1.05")
+        alpha_multiplier = 1.05
+    if keep_threshold < 0 or keep_threshold > 1:
+        warnings.warn(f"The threshold to keep the best solution is outside [0,1]: {keep_threshold}, setting it "
+                      f"to default: 0.9")
+        keep_threshold = 0.9
+    if min_features <= 0:
+        warnings.warn(f"The min_features to stop the path iterations is below 0 which implies infinite loop. "
+                      f"Setting it to default: 2")
+        min_features = 2
+    elif min_features >= X.shape[1]:
+        warnings.warn(f"The min_features param is greater or equal to the number of features. This implies that "
+                      f"no path will be performed. The method is equivalent to `fit`.")
+
+    # Start by fitting the model using all features and without regularisation
+    alpha = clf.alpha
+    clf.set_params(alpha=0)
+
+    if clf.verbose:
+        print("Starting initial training with alpha = 0")
+    clf.fit(X)
+    best_gemini = clf.score(X)
+    weights = clf._get_weights()
+    best_weights = [w.copy() for w in weights]
+
+    if clf.verbose:
+        print(f"Finished initial training. GEMINI = {best_gemini}")
+
+    kernel = clf._compute_affinity(X)
+
+    generator = check_random_state(clf.random_state)
+    if clf.batch_size is not None:
+        batch_size = clf.batch_size
+    else:
+        batch_size = len(X)
+
+    alphas = [0]
+    n_features = [X.shape[1]]
+    geminis = [best_gemini]
+    group_lasso_penalties = [clf._group_lasso_penalty()]
+
+    # Re-initialise the optimiser to SGD with 0.9 momentum (default option)
+    clf.optimiser_ = SGDOptimizer(weights, clf.learning_rate)
+
+    while clf._n_selected_features() > min_features:
+        clf.alpha = alpha
+
+        # Compute the validation scores at the beginning of this step of the path
+        validation_gemini, validation_l1 = compute_val_score(clf, X, batch_size)
+
+        if clf.verbose:
+            print(f"Starting new iteration with: alpha = {clf.alpha}. Validation score is {validation_gemini}")
+
+        gemini_score = np.array([validation_gemini])
+        patience = 0
+        i = 0
+        while i < clf.max_iter and patience < max_patience:
+            all_indices = generator.permutation(len(X))
+            j = 0
+            while j < len(X):
+                batch_indices = all_indices[j:j + batch_size]
+                X_batch = X[batch_indices]
+                kernel_batch = kernel[batch_indices][:, batch_indices]
+                y_pred = clf._infer(X_batch)
+                gemini_score, grads = clf._compute_gemini(y_pred, kernel_batch, return_grad=True)
+                grads = clf._compute_grads(X_batch, y_pred, grads)
+                clf._update_weights(weights, grads)
+
+                j += batch_size
+
+            iteration_gemini, iteration_l1 = compute_val_score(clf, X, batch_size)
+
+            if iteration_gemini > (2 - early_stopping_factor) * validation_gemini \
+                    or iteration_l1 < early_stopping_factor * validation_l1:
+                validation_l1 = iteration_l1
+                validation_gemini = iteration_gemini
+                patience = 0
+            else:
+                patience += 1
+            if np.isnan(gemini_score):
+                warnings.warn(f"Unfortunately, the GEMINI converged to nan, making the entire path unsucessful."
+                              f"Please report this error. Score and gradients are: {gemini_score}, {grads}")
+                patience = max_patience
+
+            i += 1
+
+        alphas.append(alpha)
+        n_features.append(clf._n_selected_features().item())
+        geminis.append(gemini_score.item())
+        group_lasso_penalties.append(clf._group_lasso_penalty())
+
+        if clf.verbose:
+            print(f"Finished after {i} iterations. Current iteration score is {iteration_gemini - iteration_l1}. "
+                  f"Current GEMINI score is {gemini_score}. Number of features is"
+                  f" {clf._n_selected_features().item()}")
+
+        alpha *= alpha_multiplier
+        if gemini_score >= best_gemini:
+            best_gemini = gemini_score
+            if clf.verbose:
+                print("Best GEMINI score so far, saving it.")
+
+        if gemini_score >= keep_threshold * best_gemini:
+            best_weights = [w.copy() for w in weights]
+            if clf.verbose:
+                print(f"This is definitely the best score so far within threshold: {gemini_score}, {best_gemini}")
+
+    return best_weights, geminis, group_lasso_penalties, alphas, n_features
 
 
 class _SparseMLPGEMINI(_MLPGEMINI, ABC):
@@ -63,6 +190,9 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
     M: float, default=10 The hierarchy coefficient that controls the relative strength between the group-lasso
         penalty of the skip connection and the sparsity of the first layer of the MLP.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -98,13 +228,14 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
     }
 
     def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, M=10,
-                 alpha=1e-2, solver="adam", verbose=False, random_state=None):
+                 alpha=1e-2, solver="adam", batch_size=None, verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             max_iter=max_iter,
             learning_rate=learning_rate,
             n_hidden_dim=n_hidden_dim,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -168,6 +299,17 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
     def _n_selected_features(self):
         return (np.linalg.norm(self.W_skip_, axis=1, ord=2) != 0).sum()
 
+    def get_selection(self):
+        """
+        Retrieves the indices of features that were selected by the model.
+
+        Returns
+        -------
+        ind: ndarray
+            The indices of the selected features.
+        """
+        return np.nonzero(np.linalg.norm(self.W_skip_, axis=1, ord=2))[0]
+
     def _group_lasso_penalty(self):
         return np.linalg.norm(self.W_skip_, axis=1, ord=2).sum()
 
@@ -215,105 +357,9 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
         n_features: list of float of length T
             The number of features that were selected at step t.
         """
-        self._validate_data(X)
-        check_groups(self.groups, X.shape[1])
-        if alpha_multiplier <= 1:
-            warnings.warn(f"The alpha multiplier is lower or equal to 1. This will not increase alpha during the path. "
-                          f"Setting it again to default parameters: 1.05")
-            alpha_multiplier = 1.05
-        if keep_threshold < 0 or keep_threshold > 1:
-            warnings.warn(f"The threshold to keep the best solution is outside [0,1]: {keep_threshold}, setting it "
-                          f"to default: 0.9")
-            keep_threshold = 0.9
-        if min_features <= 0:
-            warnings.warn(f"The min_features to stop the path iterations is below 0 which implies infinite loop. "
-                          f"Setting it to default: 2")
-            min_features = 2
-        elif min_features >= X.shape[1]:
-            warnings.warn(f"The min_features param is greater or equal to the number of features. This implies that "
-                          f"no path will be performed. The method is equivalent to `fit`.")
-
-        # Start by fitting the model using all features and without regularisation
-        alpha = self.alpha
-        self.set_params(alpha=0)
-
-        if self.verbose:
-            print("Starting initial training with alpha = 0")
-        self.fit(X)
-        best_gemini = self.score(X)
-        weights = self._get_weights()
-        best_weights = [w.copy() for w in weights]
-
-        if self.verbose:
-            print(f"Finished initial training. GEMINI = {best_gemini}")
-
-        kernel = self._compute_affinity(X)
-
-        alphas = [0]
-        n_features = [X.shape[1]]
-        geminis = [best_gemini]
-        group_lasso_penalties = [self._group_lasso_penalty()]
-
-        # Re-initialise the optimiser to SGD with 0.9 momentum (default option)
-        self.optimiser_ = SGDOptimizer(weights, self.learning_rate)
-
-        while self._n_selected_features() > min_features:
-            self.alpha = alpha
-
-            # Compute the validation scores at the beginning of this step of the path
-            validation_gemini = self.score(X)
-            validation_l1 = self._group_lasso_penalty() * self.alpha
-
-            if self.verbose:
-                print(f"Starting new iteration with: alpha = {self.alpha}. Validation score is {validation_gemini}")
-
-            gemini_score = np.array([validation_gemini])
-            patience = 0
-            i = 0
-            while i < self.max_iter and patience < max_patience:
-                y_pred = self._infer(X)
-                gemini_score, grads = self._compute_gemini(y_pred, kernel, return_grad=True)
-                iteration_gemini = gemini_score
-                iteration_l1 = self._group_lasso_penalty() * self.alpha
-
-                if iteration_gemini > (2 - early_stopping_factor) * validation_gemini \
-                        or iteration_l1 < early_stopping_factor * validation_l1:
-                    validation_l1 = iteration_l1
-                    validation_gemini = iteration_gemini
-                    patience = 0
-                else:
-                    patience += 1
-                if np.isnan(gemini_score):
-                    warnings.warn(f"Unfortunately, the GEMINI converged to nan, making the entire path unsucessful."
-                                  f"Please report this error. Score and gradients are: {gemini_score}, {grads}")
-                    patience = max_patience
-
-                if patience != max_patience:
-                    grads = self._compute_grads(X, y_pred, grads)
-                    self._update_weights(weights, grads)
-
-                i += 1
-
-            alphas.append(alpha)
-            n_features.append(self._n_selected_features().item())
-            geminis.append(gemini_score.item())
-            group_lasso_penalties.append(self._group_lasso_penalty())
-
-            if self.verbose:
-                print(f"Finished after {i} iterations. Current iteration score is {iteration_gemini - iteration_l1}. "
-                      f"Current GEMINI score is {gemini_score}. Number of features is"
-                      f" {self._n_selected_features().item()}")
-
-            alpha *= alpha_multiplier
-            if gemini_score >= best_gemini:
-                best_gemini = gemini_score
-                if self.verbose:
-                    print("Best GEMINI score so far, saving it.")
-
-            if gemini_score >= keep_threshold * best_gemini:
-                best_weights = [w.copy() for w in weights]
-                if self.verbose:
-                    print(f"This is definitely the best score so far within threshold: {gemini_score}, {best_gemini}")
+        best_weights, geminis, group_lasso_penalties, alphas, n_features = _path(self, X, alpha_multiplier,
+                                                                                 min_features, keep_threshold,
+                                                                                 early_stopping_factor, max_patience)
 
         if restore_best_weights:
             if self.verbose:
@@ -360,6 +406,9 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
     alpha: float, default=1e-2
         The weight of the group-lasso penalty in the optimisation scheme.
 
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -386,13 +435,14 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
         "lambda_": [Interval(Real, 0, np.inf, closed="neither")],
     }
 
-    def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3,
-                 alpha=1e-2, solver="adam", verbose=False, random_state=None):
+    def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, alpha=1e-2, batch_size=None,
+                 solver="adam", verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -414,6 +464,17 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
 
     def _n_selected_features(self):
         return (np.linalg.norm(self.W_, axis=1, ord=2) != 0).sum()
+
+    def get_selection(self):
+        """
+        Retrieves the indices of features that were selected by the model.
+
+        Returns
+        -------
+        ind: ndarray
+            The indices of the selected features.
+        """
+        return np.nonzero(np.linalg.norm(self.W_, axis=1, ord=2))
 
     def _group_lasso_penalty(self):
         return np.linalg.norm(self.W_, axis=1, ord=2).sum()
@@ -462,106 +523,9 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
         n_features: list of float of length T
             The number of features that were selected at step t.
         """
-        self._validate_data(X)
-        check_groups(self.groups, X.shape[1])
-
-        if alpha_multiplier <= 1:
-            warnings.warn(f"The alpha multiplier is lower or equal to 1. This will not increase alpha during the path. "
-                          f"Setting it again to default parameters: 1.05")
-            alpha_multiplier = 1.05
-        if keep_threshold < 0 or keep_threshold > 1:
-            warnings.warn(f"The threshold to keep the best solution is outside [0,1]: {keep_threshold}, setting it "
-                          f"to default: 0.9")
-            keep_threshold = 0.9
-        if min_features <= 0:
-            warnings.warn(f"The min_features to stop the path iterations is below 0 which implies infinite loop. "
-                          f"Setting it to default: 2")
-            min_features = 2
-        elif min_features >= X.shape[1]:
-            warnings.warn(f"The min_features param is greater or equal to the number of features. This implies that "
-                          f"no path will be performed. The method is equivalent to `fit`.")
-
-        # Start by fitting the model using all features and without regularisation
-        alpha = self.alpha
-        self.set_params(alpha=0)
-
-        if self.verbose:
-            print("Starting initial training with alpha = 0")
-        self.fit(X)
-        best_gemini = self.score(X)
-        weights = self._get_weights()
-        best_weights = [w.copy() for w in weights]
-
-        if self.verbose:
-            print(f"Finished initial training. GEMINI = {best_gemini}")
-
-        kernel = self._compute_affinity(X)
-
-        alphas = [0]
-        n_features = [X.shape[1]]
-        geminis = [best_gemini]
-        group_lasso_penalties = [self._group_lasso_penalty()]
-
-        # Re-initialise the optimiser to SGD with 0.9 momentum (default option)
-        self.optimiser_ = SGDOptimizer(weights, self.learning_rate)
-
-        while self._n_selected_features() > min_features:
-            self.alpha = alpha
-
-            # Compute the validation scores at the beginning of this step of the path
-            validation_gemini = self.score(X)
-            validation_l1 = self._group_lasso_penalty() * self.alpha
-
-            if self.verbose:
-                print(f"Starting new iteration with: alpha = {self.alpha}. Validation score is {validation_gemini}")
-
-            gemini_score = np.array([validation_gemini])
-            patience = 0
-            i = 0
-            while i < self.max_iter and patience < max_patience:
-                y_pred = self._infer(X)
-                gemini_score, grads = self._compute_gemini(y_pred, kernel, return_grad=True)
-                iteration_gemini = gemini_score
-                iteration_l1 = self._group_lasso_penalty() * self.alpha
-
-                if iteration_gemini > (2 - early_stopping_factor) * validation_gemini \
-                        or iteration_l1 < early_stopping_factor * validation_l1:
-                    validation_l1 = iteration_l1
-                    validation_gemini = iteration_gemini
-                    patience = 0
-                else:
-                    patience += 1
-                if np.isnan(gemini_score):
-                    warnings.warn(f"Unfortunately, the GEMINI converged to nan, making the entire path unsucessful."
-                                  f"Please report this error. Score and gradients are: {gemini_score}, {grads}")
-                    patience = max_patience
-
-                if patience != max_patience:
-                    grads = self._compute_grads(X, y_pred, grads)
-                    self._update_weights(weights, grads)
-
-                i += 1
-
-            alphas.append(alpha)
-            n_features.append(self._n_selected_features().item())
-            geminis.append(gemini_score.item())
-            group_lasso_penalties.append(self._group_lasso_penalty())
-
-            if self.verbose:
-                print(f"Finished after {i} iterations. Current iteration score is {iteration_gemini - iteration_l1}. "
-                      f"Current GEMINI score is {gemini_score}. Number of features is"
-                      f" {self._n_selected_features().item()}")
-
-            alpha *= alpha_multiplier
-            if gemini_score >= best_gemini:
-                best_gemini = gemini_score
-                if self.verbose:
-                    print("Best GEMINI score so far, saving it.")
-
-            if gemini_score >= keep_threshold * best_gemini:
-                best_weights = [w.copy() for w in weights]
-                if self.verbose:
-                    print(f"This is definitely the best score so far within threshold: {gemini_score}, {best_gemini}")
+        best_weights, geminis, group_lasso_penalties, alphas, n_features = _path(self, X, alpha_multiplier,
+                                                                                 min_features, keep_threshold,
+                                                                                 early_stopping_factor, max_patience)
 
         if restore_best_weights:
             if self.verbose:
