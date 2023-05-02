@@ -41,5 +41,7 @@ Dataset generation
     :template: function.rst
 
     data.draw_gmm
+    data.multivariate_student_t
+    data.gstm
     data.celeux_one
     data.celeux_two
