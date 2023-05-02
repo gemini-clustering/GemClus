@@ -12,17 +12,17 @@ The dataset consists of 3 isotropic Gaussian distributions (so 3 clusters to fin
 the optimal solution should find that only 2 features are relevant and sufficient to get the correct clustering.
 """
 
-
-from matplotlib import pyplot as plt
-from gemclus.sparse import SparseMLPMMD
-from sklearn import datasets
 import numpy as np
+from matplotlib import pyplot as plt
+from sklearn import datasets
+
+from gemclus.sparse import SparseMLPMMD
 
 ###########################################################################
 # Load a simple synthetic dataset
 # --------------------------------------------------------------
 
-#%%data
+# %%data
 
 # Generate samples on that are simple to separate
 X, y = datasets.make_blobs(centers=3, cluster_std=0.5, n_samples=200, random_state=0)
@@ -37,7 +37,7 @@ X = np.concatenate([X, np.random.normal(scale=0.5, size=(200, 48))], axis=1)
 # Create the GEMINI clustering model (just a logistic regression) and call the .path method to iteratively select
 # features through gradient descent.
 
-#%%training
+# %%training
 
 clf = SparseMLPMMD(random_state=0, alpha=1)
 
@@ -50,7 +50,7 @@ best_weights, geminis, penalties, alphas, n_features = clf.path(X)
 #
 # Take a look at how our features are distributed
 
-#%%path
+# %%path
 
 # Highlight the number of selected features and the GEMINI along decreasing increasing alphas
 plt.figure(figsize=(10, 5))
@@ -86,7 +86,7 @@ print(f"Top gemclus was {max(geminis)}, which settles an optimum of {0.9 * max(g
 # Final Clustering
 # -----------------
 
-#%%clustering
+# %%clustering
 
 # Now, show the cluster predictions
 y_pred = clf.predict(X)

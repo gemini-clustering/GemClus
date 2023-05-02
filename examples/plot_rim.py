@@ -8,17 +8,17 @@ maximising for a linear model under :math:`\ell_2` penalty. In this example, we 
 Gaussian mixture using RIM.
 """
 
-
-from matplotlib import pyplot as plt
-from gemclus.linear import RIM
-from sklearn import datasets
 import numpy as np
+from matplotlib import pyplot as plt
+from sklearn import datasets
+
+from gemclus.linear import RIM
 
 ###########################################################################
 # Load a simple synthetic dataset
 # --------------------------------------------------------------
 
-#%%data
+# %%data
 
 # Generate samples on that are simple to separate
 X, y = datasets.make_blobs(centers=3, cluster_std=0.5, n_samples=200, random_state=0)
@@ -28,31 +28,30 @@ X, y = datasets.make_blobs(centers=3, cluster_std=0.5, n_samples=200, random_sta
 # --------------------------------------------------------------
 # Create the RIM clustering model (just a logistic regression) and fit it to the data.
 
-#%%training
+# %%training
 
 clf = RIM(n_clusters=3, random_state=0)
 clf.fit(X)
-
 
 ##########################################################################
 # Final Clustering
 # -----------------
 # Let us take a look at the decision boundaries according to the probabilities
 
-#%%clustering
+# %%clustering
 
 # Predict a grad of inputs
-x_vals = np.linspace(X[:,0].min()-0.5, X[:,0].max()+0.5, num=50)
-y_vals = np.linspace(X[:,1].min()-0.5, X[:,1].max()+0.5, num=50)
-xx,yy = np.meshgrid(x_vals, y_vals)
-grid_inputs = np.c_[xx.ravel(),yy.ravel()]
+x_vals = np.linspace(X[:, 0].min() - 0.5, X[:, 0].max() + 0.5, num=50)
+y_vals = np.linspace(X[:, 1].min() - 0.5, X[:, 1].max() + 0.5, num=50)
+xx, yy = np.meshgrid(x_vals, y_vals)
+grid_inputs = np.c_[xx.ravel(), yy.ravel()]
 grid_pred = clf.predict_proba(grid_inputs)
 
 # Isolate probability of the argmax
 zz = grid_pred.max(1)
-zz = zz.reshape((50,50))
+zz = zz.reshape((50, 50))
 
-plt.contourf(xx,yy,zz, alpha=0.3, levels=10)
+plt.contourf(xx, yy, zz, alpha=0.3, levels=10)
 
 # Now, show the cluster predictions
 y_pred = clf.predict(X)

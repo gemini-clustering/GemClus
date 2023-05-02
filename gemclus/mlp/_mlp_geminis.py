@@ -4,9 +4,9 @@ from numbers import Integral
 import numpy as np
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils._param_validation import Interval
+from sklearn.utils.extmath import softmax
 
 from .._base_gemini import _BaseGEMINI, _BaseMMD, _BaseWasserstein
-from sklearn.utils.extmath import softmax
 
 
 class _MLPGEMINI(_BaseGEMINI, ABC):
@@ -192,8 +192,8 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
 
     metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'},
         default='euclidean'
-        The metric to use in combination with the Wasserstein objective. It corresponds to one value of `PAIRED_DISTANCES`.
-        Currently, all metric parameters are the default ones.
+        The metric to use in combination with the Wasserstein objective. It corresponds to one value of
+        `PAIRED_DISTANCES`.  Currently, all metric parameters are the default ones.
 
     ovo: bool, default=False
         Whether to run the model using the MMD OvA (False) or the MMD OvO (True).

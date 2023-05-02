@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.typing import NDArray
 import ot
 from sklearn.utils._param_validation import validate_params
 
@@ -44,6 +43,7 @@ def mmd_ova(y_pred, K, return_grad=False):
         return mmd_ova_value, gradient * clip_mask
     else:
         return mmd_ova_value
+
 
 @validate_params(
     {
@@ -94,6 +94,7 @@ def mmd_ovo(y_pred, K, return_grad=False):
     else:
         return mmd_ovo_value
 
+
 @validate_params(
     {
         "y_pred": ["array-like"],
@@ -103,9 +104,6 @@ def mmd_ovo(y_pred, K, return_grad=False):
 )
 def wasserstein_ova(y_pred, D, return_grad=False):
     N, K = y_pred.shape
-
-    if return_grad:
-        grads = np.zeros(y_pred.shape)
 
     # To stabilise the computations and in order to avoid the
     # softmax overconfident values which would lead to division by 0
@@ -134,6 +132,7 @@ def wasserstein_ova(y_pred, D, return_grad=False):
         return wasserstein_ova_value, grads * clip_mask
     else:
         return wasserstein_ova_value
+
 
 @validate_params(
     {

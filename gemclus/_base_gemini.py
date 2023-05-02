@@ -423,8 +423,8 @@ class _BaseWasserstein(_BaseGEMINI, ABC):
 
     metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'},
         default='euclidean'
-        The metric to use in combination with the Wasserstein objective. It corresponds to one value of `PAIRED_DISTANCES`.
-        Currently, all metric parameters are the default ones.
+        The metric to use in combination with the Wasserstein objective. It corresponds to one value of
+        `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.
 
     ovo: bool, default=False
         Whether to run the model using the Wasserstein OvA (False) or the Wasserstein OvO (True).

@@ -1,6 +1,7 @@
 # GEMCLUS - A package for discriminative clustering using GEMINI
 
-The **gemclus**  package provides simple tools to perform discriminative clustering using the generalised mutual information (GEMINI).
+The **gemclus**  package provides simple tools to perform discriminative clustering using the generalised mutual
+information (GEMINI).
 The package was written to be a scikit-learn compatible extension.
 
 You can find the complete documentation of the package here: `Link to be announced`
@@ -14,6 +15,7 @@ pip install gemclus
 ```
 
 The library requires a couple scientific package to run:
+
 + NumPy
 + Scipy
 + POT

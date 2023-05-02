@@ -1,5 +1,5 @@
-from ..sparse._base_sparse import _SparseLinearGEMINI
 from .._base_gemini import _BaseMMD
+from ..sparse._base_sparse import _SparseLinearGEMINI
 
 
 class SparseLinearMMD(_SparseLinearGEMINI, _BaseMMD):
@@ -15,8 +15,8 @@ class SparseLinearMMD(_SparseLinearGEMINI, _BaseMMD):
 
     groups: list of arrays of various shapes, default=None
         if groups is set, it must describe a partition of the indices of variables. This will be used for performing
-        variable selection with groups of features considered to represent one variables. This option can typically be used
-        for one-hot-encoded variables.
+        variable selection with groups of features considered to represent one variables. This option can typically be
+        used for one-hot-encoded variables.
         
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.

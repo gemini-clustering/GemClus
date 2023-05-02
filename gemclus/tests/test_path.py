@@ -1,7 +1,7 @@
-import pytest
 import numpy as np
-
+import pytest
 from sklearn.datasets import make_blobs
+
 from ..sparse import SparseMLPMMD, SparseLinearMMD
 
 
@@ -42,6 +42,7 @@ def test_sparse_stability(clf_class, data):
     gemini_score = clf.score(data)
 
     assert gemini_score >= 0.9 * max(geminis)
+
 
 def test_weights_coherence(data):
     clf = SparseMLPMMD(random_state=0)

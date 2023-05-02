@@ -4,9 +4,9 @@ from numbers import Real
 import numpy as np
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils._param_validation import Interval
+from sklearn.utils.extmath import softmax
 
 from .._base_gemini import _BaseGEMINI, _BaseMMD, _BaseWasserstein
-from sklearn.utils.extmath import softmax
 
 
 class _LinearGEMINI(_BaseGEMINI, ABC):
@@ -158,8 +158,8 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
 
     metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'},
         default='euclidean'
-        The metric to use in combination with the Wasserstein objective. It corresponds to one value of `PAIRED_DISTANCES`.
-        Currently, all metric parameters are the default ones.
+        The metric to use in combination with the Wasserstein objective. It corresponds to one value of
+        `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.
 
     solver: {'sgd','adam'}, default='adam'
         The solver for weight optimisation.
@@ -232,8 +232,8 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
 
 class RIM(_LinearGEMINI):
     """ Implementation of the maximisation of the classical mutual information using a logistic regression with an
-    :math:`\ell_2` penalty on the weights. This implementation follows the framework described by Krause et al. in the RIM
-    paper.
+    :math:`\ell_2` penalty on the weights. This implementation follows the framework described by Krause et al. in the
+    RIM paper.
 
     Parameters
     ----------
@@ -313,7 +313,7 @@ class RIM(_LinearGEMINI):
             solver=solver,
             verbose=verbose,
             random_state=random_state
-       )
+        )
         self.reg = reg
 
     def _compute_affinity(self, X):
@@ -321,25 +321,25 @@ class RIM(_LinearGEMINI):
 
     def _compute_gemini(self, y_pred, K, return_grad=False):
         # Start by computing mutual information
-        p_y_x = np.clip(y_pred, 1e-12, 1-1e-12)
+        p_y_x = np.clip(y_pred, 1e-12, 1 - 1e-12)
         p_y = p_y_x.mean(0)
 
         log_p_y_x = np.log(p_y_x)
         log_p_y = np.log(p_y)
 
-        cluster_entropy = np.sum(p_y*log_p_y)
-        prediction_entropy = np.sum(np.mean(p_y_x*log_p_y_x, axis=0))
+        cluster_entropy = np.sum(p_y * log_p_y)
+        prediction_entropy = np.sum(np.mean(p_y_x * log_p_y_x, axis=0))
 
-        mutual_information = prediction_entropy-cluster_entropy
+        mutual_information = prediction_entropy - cluster_entropy
 
         if return_grad:
-            gradient_mi = -log_p_y_x/log_p_y_x.shape[0] + log_p_y
+            gradient_mi = -log_p_y_x / log_p_y_x.shape[0] + log_p_y
             return mutual_information, -gradient_mi
         else:
             return mutual_information
 
     def compute_penalty(self):
-        return self.reg * np.sum(self.W_*self.W_)
+        return self.reg * np.sum(self.W_ * self.W_)
 
     def _update_weights(self, weights, gradients):
         # Add the regularisation gradient on the weight matrix

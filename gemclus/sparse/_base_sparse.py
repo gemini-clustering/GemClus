@@ -38,9 +38,9 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
         The maximum number of clusters to form as well as the number of output neurons in the neural network.
 
     groups: list of arrays of various shapes, default=None
-        if groups is set, it must describe a partition of the indices of variables. This will be used for performing
-        variable selection with groups of features considered to represent one variables. This option can typically be used
-        for one-hot-encoded variables.
+        If groups is set, it must describe a partition of the indices of variables. This will be used for performing
+        variable selection with groups of features considered to represent one variables. This option can typically be
+        used for one-hot-encoded variables.
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -341,9 +341,9 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
         The maximum number of clusters to form as well as the number of output neurons in the neural network.
 
     groups: list of arrays of various shapes, default=None
-        if groups is set, it must describe a partition of the indices of variables. This will be used for performing
-        variable selection with groups of features considered to represent one variables. This option can typically be used
-        for one-hot-encoded variables.
+        If groups is set, it must describe a partition of the indices of variables. This will be used for performing
+        variable selection with groups of features considered to represent one variables. This option can typically be
+        used for one-hot-encoded variables.
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.

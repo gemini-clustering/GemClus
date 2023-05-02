@@ -1,5 +1,4 @@
 import pytest
-
 from sklearn.datasets import load_iris
 from sklearn.utils.estimator_checks import check_estimator
 
@@ -85,7 +84,7 @@ def test_all_sparse_linear_attributes(clf, data):
 )
 def test_default_mmd(clf):
     assert clf.kernel == "linear"
-    assert clf.ovo == False
+    assert not clf.ovo
 
 
 @pytest.mark.parametrize(
@@ -94,7 +93,7 @@ def test_default_mmd(clf):
 )
 def test_default_wasserstein(clf):
     assert clf.metric == "euclidean"
-    assert clf.ovo == False
+    assert not clf.ovo
 
 
 @pytest.mark.parametrize(

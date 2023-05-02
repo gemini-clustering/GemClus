@@ -10,10 +10,11 @@ distribution generates sample that may seem like outliers if we are to expect on
 Unlike the paper, this example here is done with the `gemclus.linear.LinearWasserstein` instead of an MLP.
 """
 
-from matplotlib import pyplot as plt
-from gemclus.linear import LinearWasserstein
 import numpy as np
+from matplotlib import pyplot as plt
+
 from gemclus.data import gstm
+from gemclus.linear import LinearWasserstein
 
 ##########################################################################
 # Generate the data

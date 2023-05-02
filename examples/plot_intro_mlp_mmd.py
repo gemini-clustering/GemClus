@@ -7,23 +7,23 @@ An example plot of :class:`gemclus.base_gemini.DenseMMDOvO`
 """
 
 from matplotlib import pyplot as plt
-from gemclus.mlp import MLPMMD
 from sklearn import datasets
+
+from gemclus.mlp import MLPMMD
 
 ###########################################################################
 # Generate data
 # -------------
 
-#%%data
+# %%data
 
-X,y=datasets.make_blobs(centers=3,cluster_std=0.5,n_samples=200,random_state=0)
-
+X, y = datasets.make_blobs(centers=3, cluster_std=0.5, n_samples=200, random_state=0)
 
 ###########################################################################
 # Create the MLP clustering model and fit it
 # -------------------------------------------
 
-#%%training
+# %%training
 clf = MLPMMD(random_state=0, ovo=True)
 clf.fit(X)
 
@@ -31,7 +31,7 @@ clf.fit(X)
 # Plot the final clustering
 # -------------------------
 
-#%%plot
+# %%plot
 
 y_pred = clf.predict(X)
 X_0 = X[y_pred == 0]

@@ -1,5 +1,5 @@
-from ..sparse._base_sparse import _SparseMLPGEMINI
 from .._base_gemini import _BaseMMD
+from ..sparse._base_sparse import _SparseMLPGEMINI
 
 
 class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
@@ -18,8 +18,8 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
 
     groups: list of arrays of various shapes, default=None
         if groups is set, it must describe a partition of the indices of variables. This will be used for performing
-        variable selection with groups of features considered to represent one variables. This option can typically be used
-        for one-hot-encoded variables.
+        variable selection with groups of features considered to represent one variables. This option can typically be
+        used for one-hot-encoded variables.
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -111,7 +111,8 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
         **_SparseMLPGEMINI._parameter_constraints,
     }
 
-    def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, kernel="linear", M=10,
+    def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, kernel="linear",
+                 M=10,
                  alpha=1e-2, ovo=False, solver="adam", verbose=False, random_state=None):
         _SparseMLPGEMINI.__init__(
             self,
@@ -137,4 +138,3 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
             verbose=verbose,
             random_state=random_state,
         )
-

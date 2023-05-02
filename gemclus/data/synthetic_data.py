@@ -1,9 +1,8 @@
 from numbers import Integral, Real
+from typing import Tuple
 
 import numpy as np
 from scipy.linalg import block_diag
-from typing import Tuple
-
 from sklearn.utils import check_random_state, check_array
 from sklearn.utils._param_validation import validate_params, Interval, Iterable
 
@@ -174,15 +173,15 @@ def gstm(n=500, alpha=2, df=1, random_state=None):
     covariance = np.eye(2)
 
     # For the 3 Gaussian distribution, we draw the samples using a GMM with proportions 1/3 on 3/4 of the samples
-    n_gaussian = 3*n//4
-    X_gaussian, y_gaussian = draw_gmm(n_gaussian, locations[:-1], [covariance]*3, np.ones(3)/3, generator)
+    n_gaussian = 3 * n // 4
+    X_gaussian, y_gaussian = draw_gmm(n_gaussian, locations[:-1], [covariance] * 3, np.ones(3) / 3, generator)
 
     # Then we sample the student-t distribution
-    n_student = n-n_gaussian
+    n_student = n - n_gaussian
     X_student = multivariate_student_t(n_student, locations[-1], covariance, df, generator)
 
     X = np.vstack([X_gaussian, X_student])
-    y = np.concatenate([y_gaussian, np.ones(n_student)*3])
+    y = np.concatenate([y_gaussian, np.ones(n_student) * 3])
 
     # Apply one final random permutation to shuffle the data
     order = generator.permutation(n)

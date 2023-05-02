@@ -3,8 +3,8 @@
 Grouped Feature selection with a linear model
 =================================================================
 
-In this example, we ask the :class:`gemclus.sparse.SparseLinearMMD` to perform a path where the regularisation penalty is
-progressively increased until all features but 2 are discarded. Moreover, we will produce some categorical variables
+In this example, we ask the :class:`gemclus.sparse.SparseLinearMMD` to perform a path where the regularisation penalty
+is progressively increased until all features but 2 are discarded. Moreover, we will produce some categorical variables
 that are one-hot-encoded and constrain the model to consider these features altogether using the `groups` option of the
 model.
 
@@ -13,9 +13,10 @@ variables. Thus, the optimal solution should find that only 2 features are relev
 clustering.
 """
 
-from matplotlib import pyplot as plt
-from gemclus.sparse import SparseLinearMMD
 import numpy as np
+from matplotlib import pyplot as plt
+
+from gemclus.sparse import SparseLinearMMD
 
 np.random.seed(0)
 
@@ -27,12 +28,12 @@ np.random.seed(0)
 
 # Generate the informative variables that will be the outcome of multinomial distributions
 X1_class_1 = np.random.multinomial(n=1, pvals=np.array([0.05, 0.45, 0.45, 0.05]), size=(50,))
-X2_class_1 = np.random.multinomial(n=1, pvals=np.array([0.1,0.1,0.8]), size=(50,))
+X2_class_1 = np.random.multinomial(n=1, pvals=np.array([0.1, 0.1, 0.8]), size=(50,))
 X_class_1 = np.concatenate([X1_class_1, X2_class_1], axis=1)
 X1_class_2 = np.random.multinomial(n=1, pvals=np.array([0.45, 0.05, 0.05, 0.45]), size=(50,))
 X2_class_2 = np.random.multinomial(n=1, pvals=np.array([0.8, 0.1, 0.1]), size=(50,))
 X_class_2 = np.concatenate([X1_class_2, X2_class_2], axis=1)
-X_informative = np.concatenate([X_class_1, X_class_2], axis=0)*2
+X_informative = np.concatenate([X_class_1, X_class_2], axis=0) * 2
 
 # Generate noisy variables
 X_noise = np.random.normal(size=(100, 8))
@@ -49,9 +50,11 @@ for i in range(8):
 
 print(groups, X.shape)
 
+
 # Visualise clusters
-def rand_jitter(X):
-    return X + np.random.randn(len(X))*0.01
+def rand_jitter(data):
+    return data + np.random.randn(len(data)) * 0.01
+
 
 plt.scatter(rand_jitter(X1_class_1.argmax(1)), rand_jitter(X2_class_1.argmax(1)), c="red")
 plt.scatter(rand_jitter(X1_class_2.argmax(1)), rand_jitter(X2_class_2.argmax(1)), c="blue")

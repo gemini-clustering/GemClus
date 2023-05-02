@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from sklearn.datasets import make_blobs
 from sklearn.metrics import pairwise_distances, pairwise_kernels
 from sklearn.utils.extmath import softmax
 
@@ -18,7 +17,7 @@ def data():
 
 @pytest.fixture
 def fake_data_pred():
-    X,y = celeux_one(n=50, random_state=0)
+    X, y = celeux_one(n=50, random_state=0)
     np.random.seed(0)
     y_logits = np.random.uniform(size=(50, 3))
     return X, y_logits

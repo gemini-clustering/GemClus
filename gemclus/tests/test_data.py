@@ -1,6 +1,7 @@
-import pytest
-from gemclus.data import *
 import numpy as np
+import pytest
+
+from gemclus.data import *
 
 
 @pytest.mark.parametrize(
@@ -115,7 +116,7 @@ def test_good_params_2d_student(n, mean, cov, df):
 @pytest.mark.parametrize(
     "mean, cov",
     [(np.zeros((3, 2)), [np.eye(2)] * 2),  # different number of components
-     ([np.zeros(2)]*2, [np.eye(2), np.zeros((2,2))]),  # one non-psd covariance
+     ([np.zeros(2)] * 2, [np.eye(2), np.zeros((2, 2))]),  # one non-psd covariance
      ]
 )
 def test_bad_params_gmm(mean, cov):
