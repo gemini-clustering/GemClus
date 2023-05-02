@@ -4,20 +4,20 @@ import numpy as np
 from scipy.linalg import block_diag
 from typing import Tuple
 
-from sklearn.utils import check_random_state
+from sklearn.utils import check_random_state, check_array
 from sklearn.utils._param_validation import validate_params, Interval, Iterable
 
 
 @validate_params(
     {
         "n": [Interval(Integral, 1, None, closed="left")],
-        "mus": ["array-like"],
-        "sigmas": ["array-like"],
-        "pis": ["array-like", Iterable[float]],
+        "loc": ["array-like"],
+        "scale": ["array-like"],
+        "pvals": ["array-like", Iterable[float]],
         "random_state": ["random_state"]
     }
 )
-def draw_gmm(n, mus, sigmas, pis, random_state=None) -> Tuple[np.ndarray, np.ndarray]:
+def draw_gmm(n, loc, scale, pvals, random_state=None) -> Tuple[np.ndarray, np.ndarray]:
     """
     Returns :math:`n` samples drawn from a mixture of Gaussian distributions. The number of components
     is determined by the number of elements in the lists of the parameters.
@@ -26,11 +26,11 @@ def draw_gmm(n, mus, sigmas, pis, random_state=None) -> Tuple[np.ndarray, np.nda
     ----------
     n: int
         The number of samples to draw from the GMM.
-    mus: list of 1d ndarray
+    loc: list of 1d ndarray
         A list containing the means of all components of the Gaussian mixture distributions.
-    sigmas: list of 2d ndarray
+    scale: list of 2d ndarray
         A list containing the covariances of all components of the Gaussian mixture distribution.
-    pis: 1d ndarray
+    pvals: 1d ndarray
         The proportions of each component of the Gaussian mixture.
     random_state: int, RandomState instance or None, default=None
         Determines random number generation for dataset creation. Pass an int for reproducible output across
@@ -43,38 +43,151 @@ def draw_gmm(n, mus, sigmas, pis, random_state=None) -> Tuple[np.ndarray, np.nda
     y: ndarray
         The component from which each sample originates.
     """
+    loc = check_array(loc, ensure_2d=True, ensure_min_samples=2, input_name="Means")
+    scale = check_array(scale, allow_nd=True, ensure_min_samples=2, input_name="Covariances")
+    pvals = check_array(pvals, ensure_2d=False, ensure_min_samples=2, input_name="Proportions")
 
     # Check that the parameters have satisfying properties
-    assert len(mus) == len(sigmas), "The means and the covariances do not contain the same number of components"
-    assert len(pis) == len(sigmas), "The proportions and the covariances do not contain the same number of components"
-    assert len(pis) > 1, "The gmm requires at least two components."
-    main_dim = len(mus[0])
-    for k in range(len(pis)):
-        assert len(mus[k]) == len(sigmas[k]), f"Inconsistent shape between of {k}-th means and covariances"
-        assert len(mus[k]) == main_dim, f"Inconsistent dimensions between all components. Should be {main_dim} or" \
-                                        f" {len(mus[k])} everywhere."
-        assert pis[k] > 0, f"Proportions or components should be positive."
-        # Other checks regarding psd for covariances are included in the multivariate_normal function
-
-    assert sum(pis) == 1, "Proportions of components do not add up to one."
+    K, d = loc.shape
+    assert K == scale.shape[0], "The means and the covariances do not contain the same number of components"
+    assert d == scale.shape[1] and d == scale.shape[1], "The covariances should be square matrices"
+    assert K == pvals.shape[0], "The proportions and the means do not contain the same number of components"
+    assert np.all(pvals > 0), "Proportions or components should be positive."
+    assert np.sum(pvals) == 1, "Proportions of components do not add up to one."
 
     generator = check_random_state(random_state)
 
     # Draw samples from each distribution
 
     X = []
-    if main_dim == 1:
-        X += [generator.normal(mus[k], sigmas[k], size=(n,))]
-    else:
-        for k in range(len(mus)):
-            X += [generator.multivariate_normal(mus[k], sigmas[k], size=(n,))]
 
     # Draw the true cluster from which to draw
-    y = np.random.choice(len(mus), p=pis, size=(n,))
+    y = generator.choice(K, p=pvals, size=(n,))
+    if d == 1:
+        for k in range(len(loc)):
+            X += [generator.normal(loc[k], scale[k], size=(n,))]
+    else:
+        for k in range(len(loc)):
+            X += [generator.multivariate_normal(loc[k], scale[k], size=(n,))]
 
     X = [X[k][i].reshape((1, -1)) for i, k in enumerate(y)]
 
     return np.concatenate(X, axis=0), y
+
+
+@validate_params(
+    {
+        "n": [Interval(Integral, 1, None, closed="left")],
+        "loc": ["array-like"],
+        "scale": ["array-like"],
+        "df": [Interval(Real, 0, None, closed="neither")],
+        "random_state": ["random_state"]
+    }
+)
+def multivariate_student_t(n, loc, scale, df=10, random_state=None) -> np.ndarray:
+    """
+    Draws :math:`n` samples from a multivariate Student-t distribution.
+    Parameters
+    ----------
+    n: int
+        The number of samples to draw from the distribution.
+
+    loc: ndarray of shape (d,)
+        The position of the distribution to sample from.
+
+    scale: ndarray of shape (d,d)
+        Positive semi-definite scale matrix.
+
+    df: int, default=10
+        Degrees of freedom of the distribution. Controls the spread of the samples.
+
+    random_state: int, RandomState instance or None, default=None
+        Determines random number generation for dataset creation. Pass an int for reproducible output across
+        multiple runs.
+
+    Returns
+    -------
+    X: ndarray of shape (n,d)
+        The samples drawn from the Student-t distribution.
+    """
+    loc = check_array(loc, ensure_2d=False, input_name="Location")
+    scale = check_array(scale, ensure_2d=True, input_name="Scale")
+
+    d = len(loc)
+    assert scale.shape[0] == d and scale.shape[1] == d, "Please provide a mean and scale with consistent shapes"
+
+    generator = check_random_state(random_state)
+
+    # Start the sampling process by generating from a 0-mean multivariate distribution
+    nx = generator.multivariate_normal(np.zeros(d), scale, size=n)
+    u = generator.chisquare(df, n).reshape((-1, 1))
+    X = np.sqrt(df / u) * nx + loc.reshape((1, -1))
+
+    return X
+
+
+@validate_params(
+    {
+        "n": [Interval(Integral, 4, None, closed="left")],
+        "alpha": [Interval(Real, 0, None, closed="neither")],
+        "df": [Interval(Real, 0, None, closed="neither")],
+        "random_state": ["random_state"]
+    }
+)
+def gstm(n=500, alpha=2, df=1, random_state=None):
+    """
+    Reproduces the Gaussian-Student Mixture dataset from the GEMINI article.
+
+    Parameters
+    ----------
+    n: int, default=500
+        The number of samples to draw from the dataset.
+
+    alpha: float, default=2:
+        This parameter controls how close the means of the Gaussian distribution and the location of the Student-t
+        distribution are.
+
+    df: float, default=1
+        The degrees of freedom for the Student-t distribution.
+
+    random_state: int, RandomState instance or None, default=None
+        Determines random number generation for dataset creation. Pass an int for reproducible output across
+        multiple runs.
+
+    Returns
+    -------
+    X: ndarray
+        The samples of the dataset in an array of shape n_samples x n_features
+    y: ndarray
+        The component of the GMM from which each sample was drawn.
+
+    References
+    -----------
+    GEMINI - Ohl, L., Mattei, P. A., Bouveyron, C., Harchaoui, W., Leclercq, M., Droit, A., & Precioso, F.
+        (2022, October). Generalised Mutual Information for Discriminative Clustering. In Advances in Neural
+        Information Processing Systems.
+    """
+    generator = check_random_state(random_state)
+
+    # Build the location and scale of each distribution
+    locations = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]]) * alpha
+    covariance = np.eye(2)
+
+    # For the 3 Gaussian distribution, we draw the samples using a GMM with proportions 1/3 on 3/4 of the samples
+    n_gaussian = 3*n//4
+    X_gaussian, y_gaussian = draw_gmm(n_gaussian, locations[:-1], [covariance]*3, np.ones(3)/3, generator)
+
+    # Then we sample the student-t distribution
+    n_student = n-n_gaussian
+    X_student = multivariate_student_t(n_student, locations[-1], covariance, df, generator)
+
+    X = np.vstack([X_gaussian, X_student])
+    y = np.concatenate([y_gaussian, np.ones(n_student)*3])
+
+    # Apply one final random permutation to shuffle the data
+    order = generator.permutation(n)
+
+    return X[order], y[order]
 
 
 @validate_params(
