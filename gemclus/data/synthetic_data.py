@@ -86,6 +86,7 @@ def draw_gmm(n, loc, scale, pvals, random_state=None) -> Tuple[np.ndarray, np.nd
 def multivariate_student_t(n, loc, scale, df=10, random_state=None) -> np.ndarray:
     """
     Draws :math:`n` samples from a multivariate Student-t distribution.
+
     Parameters
     ----------
     n: int

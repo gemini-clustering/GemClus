@@ -7,7 +7,7 @@ from numbers import Integral, Real
 
 import numpy as np
 from sklearn.base import ClusterMixin, BaseEstimator
-from sklearn.metrics.pairwise import KERNEL_PARAMS, PAIRED_DISTANCES, pairwise_kernels, pairwise_distances
+from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRED_DISTANCES, pairwise_kernels, pairwise_distances
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils import check_array, check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
@@ -169,7 +169,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def _compute_affinity(self, X):
+    def _compute_affinity(self, X, y=None):
         """
         Compute the affinity (kernel function or distance function_ between all samples of X.
 
@@ -177,6 +177,10 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         ----------
         X: ndarray of shape (n_samples, n_features)
             The samples between which all affinities must be compute
+
+        y: ndarray of shape (n_samples, n_samples), default=None
+            Values of the affinity between samples in case of a "precomputed" affinity. Ignored if None and the affinity
+            is not precomputed.
 
         Return
         ------
@@ -192,8 +196,9 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Training instances to cluster.
-        y : Ignored
-            Not used, present here for API consistency by convention.
+        y : ndarray of shape (n_samples, n_samples), default=None
+            Use this parameter to give a precomputed affinity metric if the option "precomputed" was passed during
+            construction. Otherwise, it is not used and present here for API consistency by convention.
 
         Returns
         -------
@@ -223,7 +228,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         if self.verbose:
             print(f"Computing affinity")
 
-        affinity = self._compute_affinity(X)
+        affinity = self._compute_affinity(X, y)
 
         if self.verbose:
             print(f"Starting training over {self.max_iter} iterations.")
@@ -252,15 +257,16 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Training instances to cluster.
-        y : Ignored
-            Not used, present here for API consistency by convention.
+        y : ndarray of shape (n_samples, n_samples), default=None
+            Use this parameter to give a precomputed affinity metric if the option "precomputed" was passed during
+            construction. Otherwise, it is not used and present here for API consistency by convention.
 
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
             Vector containing the cluster label for each sample.
         """
-        return super().fit_predict(X, y)
+        return self.fit(X, y).labels_
 
     def predict_proba(self, X):
         """
@@ -319,15 +325,16 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Test samples.
-        y : Ignored
-            Not used, present here for API consistency by convention.
+        y : ndarray of shape (n_samples, n_samples), default=None
+            Use this parameter to give a precomputed affinity metric if the option "precomputed" was passed during
+            construction. Otherwise, it is not used and present here for API consistency by convention.
 
         Returns
         -------
         score : float
             GEMINI evaluated on the output of ``self.predict(X)``.
         """
-        K = self._compute_affinity(X)
+        K = self._compute_affinity(X, y)
         y_pred = self.predict_proba(X)
         return self._compute_gemini(y_pred, K).item()
 
@@ -379,7 +386,7 @@ class _BaseMMD(_BaseGEMINI, ABC):
     """
     _parameter_constraints: dict = {
         **_BaseGEMINI._parameter_constraints,
-        "kernel": [StrOptions(set(KERNEL_PARAMS))],
+        "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS)+["precomputed"])), callable],
         "ovo": [bool]
     }
 
@@ -396,7 +403,12 @@ class _BaseMMD(_BaseGEMINI, ABC):
         self.kernel = kernel
         self.ovo = ovo
 
-    def _compute_affinity(self, X):
+    def _compute_affinity(self, X, y=None):
+        if callable(self.kernel):
+            return self.kernel(X)
+        elif self.kernel == "precomputed":
+            assert y is not None, f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}"
+            return y
         return pairwise_kernels(X, metric=self.kernel)
 
     def _compute_gemini(self, y_pred, K, return_grad=False):
@@ -453,7 +465,7 @@ class _BaseWasserstein(_BaseGEMINI, ABC):
     """
     _parameter_constraints: dict = {
         **_BaseGEMINI._parameter_constraints,
-        "metric": [StrOptions(set(PAIRED_DISTANCES))],
+        "metric": [StrOptions(set(list(PAIRED_DISTANCES)+["precomputed"]))],
         "ovo": [bool]
     }
 
@@ -470,7 +482,12 @@ class _BaseWasserstein(_BaseGEMINI, ABC):
         self.metric = metric
         self.ovo = ovo
 
-    def _compute_affinity(self, X):
+    def _compute_affinity(self, X, y=None):
+        if callable(self.metric):
+            return self.metric(X)
+        elif self.metric == "precomputed":
+            assert y is not None, f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}"
+            return y
         return pairwise_distances(X, metric=self.metric)
 
     def _compute_gemini(self, y_pred, K, return_grad=False):

@@ -1,8 +1,9 @@
 import pytest
 from sklearn.datasets import load_iris
 from sklearn.utils.estimator_checks import check_estimator
+from sklearn.utils.estimator_checks import check_clustering
 
-from ..linear import LinearWasserstein, LinearMMD
+from ..linear import LinearWasserstein, LinearMMD, RIM
 from ..mlp import MLPMMD, MLPWasserstein
 from ..sparse import SparseMLPMMD, SparseLinearMMD
 
@@ -15,7 +16,7 @@ def data():
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearMMD(), MLPMMD(), LinearWasserstein(), MLPWasserstein(), SparseLinearMMD(), SparseMLPMMD()]
+    [LinearMMD(), MLPMMD(), LinearWasserstein(), MLPWasserstein(), SparseLinearMMD(), SparseMLPMMD(), RIM()]
 )
 def test_default_clf_init(clf):
     assert clf.learning_rate == 1e-3
@@ -27,7 +28,7 @@ def test_default_clf_init(clf):
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearMMD, LinearWasserstein]
+    [LinearMMD, LinearWasserstein, RIM]
 )
 def test_all_linear_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -98,14 +99,14 @@ def test_default_wasserstein(clf):
 
 @pytest.mark.parametrize(
     "estimator",
-    [MLPMMD(), LinearMMD(), SparseMLPMMD(), SparseLinearMMD(), MLPWasserstein(), LinearWasserstein()]
+    [MLPMMD(max_iter=5), LinearMMD(max_iter=5), SparseMLPMMD(max_iter=5), SparseLinearMMD(max_iter=5),
+     MLPWasserstein(max_iter=5), LinearWasserstein(max_iter=5), RIM(max_iter=5)]
 )
 def test_all_estimators(estimator):
-    from sklearn.utils.estimator_checks import check_clustering
     check_iterator = check_estimator(estimator, generate_only=True)
     for clf, check in check_iterator:
         if check.func == check_clustering:
-            # The check clustering function tests if we output as much clusters as promised,
+            # The check clustering function tests if we output as many clusters as promised,
             # But since GEMINI may have fewer clusters, this test will never be satisfied
             continue
         check(clf)

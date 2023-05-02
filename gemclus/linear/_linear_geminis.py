@@ -316,7 +316,7 @@ class RIM(_LinearGEMINI):
         )
         self.reg = reg
 
-    def _compute_affinity(self, X):
+    def _compute_affinity(self, X, y=None):
         return None
 
     def _compute_gemini(self, y_pred, K, return_grad=False):
