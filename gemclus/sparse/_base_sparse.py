@@ -59,7 +59,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
     if clf.verbose:
         print("Starting initial training with alpha = 0")
     clf.fit(X)
-    best_gemini = clf.score(X)
+    best_gemini = 0
     weights = clf._get_weights()
     best_weights = [w.copy() for w in weights]
 
@@ -74,10 +74,10 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
     else:
         batch_size = len(X)
 
-    alphas = [0]
-    n_features = [X.shape[1]]
-    geminis = [best_gemini]
-    group_lasso_penalties = [clf._group_lasso_penalty()]
+    alphas = []
+    n_features = []
+    geminis = []
+    group_lasso_penalties = []
 
     # Re-initialise the optimiser to SGD with 0.9 momentum (default option), to follow the torch version
     # nesterov acceleration is set to False by default
@@ -92,7 +92,6 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
         if clf.verbose:
             print(f"Starting new iteration with: alpha = {clf.alpha}. Validation score is {validation_gemini}")
 
-        gemini_score = np.array([validation_gemini])
         patience = 0
         i = 0
         while i < clf.max_iter and patience < max_patience:
@@ -103,7 +102,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
                 X_batch = X[batch_indices]
                 kernel_batch = kernel[batch_indices][:, batch_indices]
                 y_pred = clf._infer(X_batch)
-                gemini_score, grads = clf._compute_gemini(y_pred, kernel_batch, return_grad=True)
+                _, grads = clf._compute_gemini(y_pred, kernel_batch, return_grad=True)
                 grads = clf._compute_grads(X_batch, y_pred, grads)
                 clf._update_weights(weights, grads)
 
@@ -119,9 +118,9 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
                 patience = 0
             else:
                 patience += 1
-            if np.isnan(gemini_score):
+            if np.isnan(iteration_gemini):
                 warnings.warn(f"Unfortunately, the GEMINI converged to nan, making the entire path unsucessful."
-                              f"Please report this error. Score and gradients are: {gemini_score}, {grads}")
+                              f"Please report this error. Score and gradients are: {iteration_gemini}, {grads}")
                 patience = max_patience
 
             i += 1
@@ -133,7 +132,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
 
         if clf.verbose:
             print(f"Finished after {i} iterations. Current iteration score is {iteration_gemini - iteration_l1}. "
-                  f"Current GEMINI score is {gemini_score}. Number of features is"
+                  f"Current GEMINI score is {iteration_gemini}. Number of features is"
                   f" {clf._n_selected_features().item()}")
 
         alpha *= alpha_multiplier
@@ -145,7 +144,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
         if iteration_gemini >= keep_threshold * best_gemini:
             best_weights = [w.copy() for w in weights]
             if clf.verbose:
-                print(f"This is definitely the best score so far within threshold: {gemini_score}, {best_gemini}")
+                print(f"This is definitely the best score so far within threshold: {iteration_gemini}, {best_gemini}")
 
     return best_weights, geminis, group_lasso_penalties, alphas, n_features
 
