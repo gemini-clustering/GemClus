@@ -79,8 +79,9 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
     geminis = [best_gemini]
     group_lasso_penalties = [clf._group_lasso_penalty()]
 
-    # Re-initialise the optimiser to SGD with 0.9 momentum (default option)
-    clf.optimiser_ = SGDOptimizer(weights, clf.learning_rate)
+    # Re-initialise the optimiser to SGD with 0.9 momentum (default option), to follow the torch version
+    # nesterov acceleration is set to False by default
+    clf.optimiser_ = SGDOptimizer(weights, clf.learning_rate, nesterov=False)
 
     while clf._n_selected_features() > min_features:
         clf.alpha = alpha
@@ -108,6 +109,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
 
                 j += batch_size
 
+            # Epoch control
             iteration_gemini, iteration_l1 = compute_val_score(clf, X, batch_size)
 
             if iteration_gemini > (2 - early_stopping_factor) * validation_gemini \
@@ -126,7 +128,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
 
         alphas.append(alpha)
         n_features.append(clf._n_selected_features().item())
-        geminis.append(gemini_score.item())
+        geminis.append(iteration_gemini)
         group_lasso_penalties.append(clf._group_lasso_penalty())
 
         if clf.verbose:
@@ -135,12 +137,12 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
                   f" {clf._n_selected_features().item()}")
 
         alpha *= alpha_multiplier
-        if gemini_score >= best_gemini:
-            best_gemini = gemini_score
+        if iteration_gemini >= best_gemini:
+            best_gemini = iteration_gemini
             if clf.verbose:
                 print("Best GEMINI score so far, saving it.")
 
-        if gemini_score >= keep_threshold * best_gemini:
+        if iteration_gemini >= keep_threshold * best_gemini:
             best_weights = [w.copy() for w in weights]
             if clf.verbose:
                 print(f"This is definitely the best score so far within threshold: {gemini_score}, {best_gemini}")
