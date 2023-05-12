@@ -7,6 +7,19 @@ sparsity-constrained variants of these models.
 
 .. currentmodule:: gemclus
 
+Scoring with GEMINI
+====================
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    gemini.MMDOvA
+    gemini.MMDOvO
+    gemini.WassersteinOvA
+    gemini.WassersteinOvO
+    gemini.MI
+
 Clustering models
 ==================
 

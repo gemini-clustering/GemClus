@@ -162,7 +162,7 @@ def gstm(n=500, alpha=2, df=1, random_state=None):
         The component of the GMM from which each sample was drawn.
 
     References
-    -----------
+    ----------
     GEMINI - Ohl, L., Mattei, P. A., Bouveyron, C., Harchaoui, W., Leclercq, M., Droit, A., & Precioso, F.
         (2022, October). Generalised Mutual Information for Discriminative Clustering. In Advances in Neural
         Information Processing Systems.
@@ -224,7 +224,7 @@ def celeux_one(n=300, p=20, mu=1.7, random_state=None) -> Tuple[np.ndarray, np.n
         The component of the GMM from which each sample was drawn.
 
     References
-    -----------
+    ----------
     Dataset - Celeux, G., Martin-Magniette, M. L., Maugis-Rabusseau, C., & Raftery, A. E. (2014). Comparing model
         selection and regularization approaches to variable selection in model-based clustering.
         Journal de la Societe francaise de statistique, 155(2), 57-71.
@@ -273,7 +273,7 @@ def celeux_two(n=2000, random_state=None) -> Tuple[np.ndarray, np.ndarray]:
         The component of the GMM from which each sample was drawn.
 
     References
-    -----------
+    ----------
     Dataset - Celeux, G., Martin-Magniette, M. L., Maugis-Rabusseau, C., & Raftery, A. E. (2014). Comparing model
         selection and regularization approaches to variable selection in model-based clustering.
         Journal de la Societe francaise de statistique, 155(2), 57-71.

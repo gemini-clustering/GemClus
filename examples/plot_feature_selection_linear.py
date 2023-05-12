@@ -47,7 +47,7 @@ best_weights, geminis, penalties, alphas, n_features = clf.path(X)
 #
 # Take a look at how the GEMINI score decreased
 print(f"The model score is {clf.score(X)}")
-print(f"Top gemclus was {max(geminis)}, which settles an optimum of {0.9 * max(geminis)}")
+print(f"Top gemini score was {max(geminis)}, which settles an optimum of {0.9 * max(geminis)}")
 
 # Highlight the number of selected features and the GEMINI along decreasing increasing alphas
 plt.title("GEMINI score depending on $\\alpha$")

@@ -7,13 +7,13 @@ from numbers import Integral, Real
 
 import numpy as np
 from sklearn.base import ClusterMixin, BaseEstimator
-from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRED_DISTANCES, pairwise_kernels, pairwise_distances
+from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRED_DISTANCES
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils import check_array, check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_is_fitted
 
-from gemclus._gemini_grads import mmd_ovo, mmd_ova, wasserstein_ovo, wasserstein_ova
+from gemclus.gemini import MMDOvO, MMDOvA, WassersteinOvO, WassersteinOvA
 
 
 class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
@@ -91,28 +91,13 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         pass
 
     @abstractmethod
-    def _compute_gemini(self, y_pred, K, return_grad=False):
+    def get_gemini(self):
         """
-        Compute the GEMINI objective given the predictions :math:`p_\theta(y|x)` and an affinity matrix. The computation
-        must return as well the gradients of the GEMINI w.r.t. the predictions. Depending on the context,
-        the affinity matrix :ref:`K` can be either a kernel matrix or a distance matrix resulting from the
-        :ref:`_compute_affinity` method.
-
-        Parameters
-        ----------
-        y_pred: ndarray of shape (n_samples, n_clusters)
-            The conditional distribution (prediction) of clustering assignment per sample.
-        K: ndarray of shape (n_samples, n_samples)
-            The affinity matrix resulting from the :ref:`_compute_affinity` method. The matrix must be symmetric.
-        return_grad: bool, default=False
-            If True, the method should return the gradient of the GEMINI w.r.t. the predictions :math:`p_\theta(y|x)`.
+        Initialises a :class:`gemclus.GEMINI` instance that will be used to train the model.
 
         Returns
         -------
-        gemclus: float
-            The gemclus score I of the model given the predictions and affinities.
-        gradients: ndarray of shape (n_samples, n_clusters)
-            The derivative :math:`\nabla_{p_\theta(y|x)}I` of the GEMINI.
+        gemini: :class:`gemclus.GEMINI` instance
         """
         pass
 
@@ -173,27 +158,6 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         """
         pass
 
-    @abstractmethod
-    def _compute_affinity(self, X, y=None):
-        """
-        Compute the affinity (kernel function or distance function_ between all samples of X.
-
-        Parameters
-        ----------
-        X: ndarray of shape (n_samples, n_features)
-            The samples between which all affinities must be compute
-
-        y: ndarray of shape (n_samples, n_samples), default=None
-            Values of the affinity between samples in case of a "precomputed" affinity. Ignored if None and the affinity
-            is not precomputed.
-
-        Return
-        ------
-        K: ndarray of shape (n_samples, n_samples)
-            The symmetric affinity matrix
-        """
-        pass
-
     def fit(self, X, y=None):
         """Compute GEMINI clustering.
 
@@ -229,6 +193,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
             print("Initialising parameters")
         self._init_params(random_state)
         weights = self._get_weights()
+        gemini = self.get_gemini()
 
         if self.solver == "sgd":
             self.optimiser_ = SGDOptimizer(weights, self.learning_rate)
@@ -238,7 +203,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         if self.verbose:
             print(f"Computing affinity")
 
-        affinity = self._compute_affinity(X, y)
+        affinity = gemini.compute_affinity(X, y)
 
         if self.verbose:
             print(f"Starting training over {self.max_iter} iterations.")
@@ -256,7 +221,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
                     affinity_batch = affinity[batch_indices][:, batch_indices]
 
                 y_pred = self._infer(X_batch)
-                _, grads = self._compute_gemini(y_pred, affinity_batch, return_grad=True)
+                _, grads = gemini(y_pred, affinity_batch, return_grad=True)
                 grads = self._compute_grads(X_batch, y_pred, grads)
                 self._update_weights(weights, grads)
 
@@ -357,9 +322,10 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         score : float
             GEMINI evaluated on the output of ``self.predict(X)``.
         """
-        K = self._compute_affinity(X, y)
+        gemini = self.get_gemini()
+        K = gemini.compute_affinity(X, y)
         y_pred = self.predict_proba(X)
-        return self._compute_gemini(y_pred, K).item()
+        return gemini(y_pred, K).item()
 
 
 class _BaseMMD(_BaseGEMINI, ABC):
@@ -430,19 +396,11 @@ class _BaseMMD(_BaseGEMINI, ABC):
         self.kernel = kernel
         self.ovo = ovo
 
-    def _compute_affinity(self, X, y=None):
-        if callable(self.kernel):
-            return self.kernel(X)
-        elif self.kernel == "precomputed":
-            assert y is not None, f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}"
-            return y
-        return pairwise_kernels(X, metric=self.kernel)
-
-    def _compute_gemini(self, y_pred, K, return_grad=False):
+    def get_gemini(self):
         if self.ovo:
-            return mmd_ovo(y_pred, K, return_grad)
+            return MMDOvO(self.kernel)
         else:
-            return mmd_ova(y_pred, K, return_grad)
+            return MMDOvA(self.kernel)
 
 
 class _BaseWasserstein(_BaseGEMINI, ABC):
@@ -513,16 +471,8 @@ class _BaseWasserstein(_BaseGEMINI, ABC):
         self.metric = metric
         self.ovo = ovo
 
-    def _compute_affinity(self, X, y=None):
-        if callable(self.metric):
-            return self.metric(X)
-        elif self.metric == "precomputed":
-            assert y is not None, f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}"
-            return y
-        return pairwise_distances(X, metric=self.metric)
-
-    def _compute_gemini(self, y_pred, K, return_grad=False):
+    def get_gemini(self):
         if self.ovo:
-            return wasserstein_ovo(y_pred, K, return_grad)
+            return WassersteinOvO(self.metric)
         else:
-            return wasserstein_ova(y_pred, K, return_grad)
+            return WassersteinOvA(self.metric)

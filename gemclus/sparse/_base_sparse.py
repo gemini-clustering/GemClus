@@ -8,7 +8,7 @@ from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval
 from sklearn.utils.extmath import softmax
 
-from .._gemini_grads import linear_prox_grad, group_mlp_prox_grad, group_linear_prox_grad, mlp_prox_grad
+from ._prox_grad import linear_prox_grad, group_mlp_prox_grad, group_linear_prox_grad, mlp_prox_grad
 from ..linear._linear_geminis import _LinearGEMINI
 from ..mlp._mlp_geminis import _MLPGEMINI
 
@@ -21,7 +21,8 @@ def check_groups(groups, n_features_in):
         assert len(all_indices) == n_features_in and set(all_indices) == set(range(n_features_in)), \
             f"Groups must form a partition of the set of variable indices"
 
-def compute_val_score(clf,X, batch_size):
+
+def compute_val_score(clf, X, batch_size):
     validation_gemini = 0  # clf.score(X)
     validation_l1 = clf._group_lasso_penalty() * clf.alpha
     j = 0
@@ -31,6 +32,7 @@ def compute_val_score(clf,X, batch_size):
         j += batch_size
     validation_gemini /= len(X)
     return validation_gemini, validation_l1
+
 
 def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
           early_stopping_factor=0.99, max_patience=10):
@@ -59,14 +61,15 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
     if clf.verbose:
         print("Starting initial training with alpha = 0")
     clf.fit(X)
-    best_gemini = 0
+    best_gemini_score = 0
+    gemini_objective = clf.get_gemini()
     weights = clf._get_weights()
     best_weights = [w.copy() for w in weights]
 
     if clf.verbose:
-        print(f"Finished initial training. GEMINI = {best_gemini}")
+        print(f"Finished initial training. GEMINI = {best_gemini_score}")
 
-    kernel = clf._compute_affinity(X)
+    affinity = gemini_objective.compute_affinity(X)
 
     generator = check_random_state(clf.random_state)
     if clf.batch_size is not None:
@@ -87,10 +90,10 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
         clf.alpha = alpha
 
         # Compute the validation scores at the beginning of this step of the path
-        validation_gemini, validation_l1 = compute_val_score(clf, X, batch_size)
+        validation_gemini_score, validation_l1 = compute_val_score(clf, X, batch_size)
 
         if clf.verbose:
-            print(f"Starting new iteration with: alpha = {clf.alpha}. Validation score is {validation_gemini}")
+            print(f"Starting new iteration with: alpha = {clf.alpha}. Validation score is {validation_gemini_score}")
 
         patience = 0
         i = 0
@@ -100,51 +103,52 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
             while j < len(X):
                 batch_indices = all_indices[j:j + batch_size]
                 X_batch = X[batch_indices]
-                kernel_batch = kernel[batch_indices][:, batch_indices]
+                kernel_batch = affinity[batch_indices][:, batch_indices]
                 y_pred = clf._infer(X_batch)
-                _, grads = clf._compute_gemini(y_pred, kernel_batch, return_grad=True)
+                _, grads = gemini_objective(y_pred, kernel_batch, return_grad=True)
                 grads = clf._compute_grads(X_batch, y_pred, grads)
                 clf._update_weights(weights, grads)
 
                 j += batch_size
 
             # Epoch control
-            iteration_gemini, iteration_l1 = compute_val_score(clf, X, batch_size)
+            iteration_gemini_score, iteration_l1 = compute_val_score(clf, X, batch_size)
 
-            if iteration_gemini > (2 - early_stopping_factor) * validation_gemini \
+            if iteration_gemini_score > (2 - early_stopping_factor) * validation_gemini_score \
                     or iteration_l1 < early_stopping_factor * validation_l1:
                 validation_l1 = iteration_l1
-                validation_gemini = iteration_gemini
+                validation_gemini_score = iteration_gemini_score
                 patience = 0
             else:
                 patience += 1
-            if np.isnan(iteration_gemini):
+            if np.isnan(iteration_gemini_score):
                 warnings.warn(f"Unfortunately, the GEMINI converged to nan, making the entire path unsucessful."
-                              f"Please report this error. Score and gradients are: {iteration_gemini}, {grads}")
+                              f"Please report this error. Score and gradients are: {iteration_gemini_score}, {grads}")
                 patience = max_patience
 
             i += 1
 
         alphas.append(alpha)
         n_features.append(clf._n_selected_features().item())
-        geminis.append(iteration_gemini)
+        geminis.append(iteration_gemini_score)
         group_lasso_penalties.append(clf._group_lasso_penalty())
 
         if clf.verbose:
-            print(f"Finished after {i} iterations. Current iteration score is {iteration_gemini - iteration_l1}. "
-                  f"Current GEMINI score is {iteration_gemini}. Number of features is"
+            print(f"Finished after {i} iterations. Current iteration score is {iteration_gemini_score - iteration_l1}. "
+                  f"Current GEMINI score is {iteration_gemini_score}. Number of features is"
                   f" {clf._n_selected_features().item()}")
 
         alpha *= alpha_multiplier
-        if iteration_gemini >= best_gemini:
-            best_gemini = iteration_gemini
+        if iteration_gemini_score >= best_gemini_score:
+            best_gemini_score = iteration_gemini_score
             if clf.verbose:
                 print("Best GEMINI score so far, saving it.")
 
-        if iteration_gemini >= keep_threshold * best_gemini:
+        if iteration_gemini_score >= keep_threshold * best_gemini_score:
             best_weights = [w.copy() for w in weights]
             if clf.verbose:
-                print(f"This is definitely the best score so far within threshold: {iteration_gemini}, {best_gemini}")
+                print(f"This is definitely the best score so far within threshold: {iteration_gemini_score}, "
+                      f"{best_gemini_score}")
 
     return best_weights, geminis, group_lasso_penalties, alphas, n_features
 
@@ -320,7 +324,7 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
         Unfold the progressive geometric increase of the penalty weight starting from the initial alpha until
         there remains only a specified amount of features.
 
-        The history of the different gemclus scores are kept as well as the best weights with minimum of features
+        The history of the different gemini scores are kept as well as the best weights with minimum of features
         ensuring that the GEMINI score remains at a certain percentage of the maximum GEMINI score seen during the
         path.
 
@@ -342,7 +346,7 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
             The percentage factor beyond which upgrades of the GEMINI or the group-lasso penalty are considered
             too small for early stopping.
         max_patience:
-            The maximum number of iterations to wait without any improvements in either the gemclus score or the
+            The maximum number of iterations to wait without any improvements in either the gemini score or the
             group-lasso penalty before stopping the current step.
 
         Returns
@@ -350,7 +354,7 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
         best_weights: list of ndarray of various shapes of length 5
             The list containing the best weights during the path. Sequentially: `W1_`, `W2_`, `W_skip_`, `b1_`, `b2_`
         geminis: list of float of length T
-            The history of the gemclus scores as the penalty alpha was increased.
+            The history of the gemini scores as the penalty alpha was increased.
         group_penalties: list of float of length T
             The history of the group-lasso penalties
         alphas: list of float of length T
@@ -486,7 +490,7 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
         Unfold the progressive geometric increase of the penalty weight starting from the initial alpha until
         there remains only a specified amount of features.
 
-        The history of the different gemclus scores are kept as well as the best weights with minimum of features
+        The history of the different gemini scores are kept as well as the best weights with minimum of features
         ensuring that the GEMINI score remains at a certain percentage of the maximum GEMINI score seen during the
         path.
 
@@ -508,7 +512,7 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
             The percentage factor beyond which upgrades of the GEMINI or the group-lasso penalty are considered
             too small for early stopping.
         max_patience:
-            The maximum number of iterations to wait without any improvements in either the gemclus score or the
+            The maximum number of iterations to wait without any improvements in either the gemini score or the
             group-lasso penalty before stopping the current step.
 
         Returns
@@ -516,7 +520,7 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
         best_weights: list of ndarray of various shapes of length 5
             The list containing the best weights during the path. Sequentially: `W_`, `b_`
         geminis: list of float of length T
-            The history of the gemclus scores as the penalty alpha was increased.
+            The history of the gemini scores as the penalty alpha was increased.
         group_penalties: list of float of length T
             The history of the group-lasso penalties
         alphas: list of float of length T

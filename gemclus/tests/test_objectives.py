@@ -1,13 +1,9 @@
 import numpy as np
 import pytest
-from sklearn.metrics import pairwise_distances, pairwise_kernels
 from sklearn.utils.extmath import softmax
 
-from .._gemini_grads import wasserstein_ova, wasserstein_ovo, mmd_ova, mmd_ovo
+from ..gemini import *
 from ..data import celeux_one
-
-wasserstein_objectives = [wasserstein_ova, wasserstein_ovo]
-mmd_objectives = [mmd_ova, mmd_ovo]
 
 
 @pytest.fixture
@@ -24,13 +20,12 @@ def fake_data_pred():
 
 
 @pytest.mark.parametrize(
-    "objective, affinity_fct",
-    [(mmd_ova, pairwise_kernels), (mmd_ovo, pairwise_kernels),
-     (wasserstein_ova, pairwise_distances), (wasserstein_ovo, pairwise_distances)]
+    "objective",
+    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO(), MI()]
 )
-def test_gemini_objective(objective, affinity_fct, data):
+def test_gemini_objective(objective, data):
     X, y = data
-    A = affinity_fct(X)
+    A = objective.compute_affinity(X)
     y_pred = np.eye(len(np.unique(y)))[y]
     loss = objective(y_pred, A)
 
@@ -39,13 +34,12 @@ def test_gemini_objective(objective, affinity_fct, data):
 
 
 @pytest.mark.parametrize(
-    "objective, affinity_fct",
-    [(mmd_ova, pairwise_kernels), (mmd_ovo, pairwise_kernels),
-     (wasserstein_ova, pairwise_distances), (wasserstein_ovo, pairwise_distances)]
+    "objective",
+    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO(), MI()]
 )
-def test_empty_clusters_loss(objective, affinity_fct, data):
+def test_empty_clusters_loss(objective, data):
     X, y = data
-    A = affinity_fct(X)
+    A = objective.compute_affinity(X)
     y_pred = np.eye(len(np.unique(y)))[y]
     unperturbed_loss = objective(y_pred, A)
 
@@ -57,13 +51,12 @@ def test_empty_clusters_loss(objective, affinity_fct, data):
 
 
 @pytest.mark.parametrize(
-    "objective, affinity_fct",
-    [(mmd_ova, pairwise_kernels), (mmd_ovo, pairwise_kernels),
-     (wasserstein_ova, pairwise_distances), (wasserstein_ovo, pairwise_distances)]
+    "objective",
+    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO()]
 )
-def test_empty_clusters_gradients(objective, affinity_fct, fake_data_pred):
+def test_empty_clusters_gradients(objective, fake_data_pred):
     X, y = fake_data_pred
-    A = affinity_fct(X)
+    A = objective.compute_affinity(X)
     y_pred = softmax(y)
     _, unperturbed_grads = objective(y_pred, A, return_grad=True)
 
@@ -77,13 +70,12 @@ def test_empty_clusters_gradients(objective, affinity_fct, fake_data_pred):
 
 
 @pytest.mark.parametrize(
-    "objective, affinity_fct",
-    [(mmd_ova, pairwise_kernels), (mmd_ovo, pairwise_kernels),
-     (wasserstein_ova, pairwise_distances), (wasserstein_ovo, pairwise_distances)]
+    "objective",
+    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO(), MI()]
 )
-def test_existing_gradient(objective, affinity_fct, fake_data_pred):
+def test_existing_gradient(objective, fake_data_pred):
     X, y = fake_data_pred
-    A = affinity_fct(X)
+    A = objective.compute_affinity(X)
     y_pred = softmax(y)
     _, grads = objective(y_pred, A, return_grad=True)
 
@@ -91,14 +83,13 @@ def test_existing_gradient(objective, affinity_fct, fake_data_pred):
 
 
 @pytest.mark.parametrize(
-    "objective, affinity_fct, atol",
-    [(mmd_ova, pairwise_kernels, 1e-5), (mmd_ovo, pairwise_kernels, 1e-5),
-     (wasserstein_ova, pairwise_distances, 1e-5), (wasserstein_ovo, pairwise_distances, 1e-5)]
+    "objective, atol",
+    [(MMDOvA(), 1e-5), (MMDOvO(), 1e-5), (WassersteinOvA(), 1e-5), (WassersteinOvO(), 1e-5)]
 )
-def test_gradient_precision(objective, affinity_fct, atol, fake_data_pred):
+def test_gradient_precision(objective, atol, fake_data_pred):
     X, y_logits = fake_data_pred
 
-    affinity = affinity_fct(X)
+    affinity = objective.compute_affinity(X)
 
     y_pred = softmax(y_logits)
 

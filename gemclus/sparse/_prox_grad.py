@@ -1,8 +1,8 @@
 import numpy as np
 
 
-def soft_threshold(l, x):
-    return np.sign(x) * np.maximum(np.abs(x) - l, 0)
+def soft_threshold(threshold, x):
+    return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
 
 
 def mlp_prox_grad(W_skip_, W1_, alpha, M):

@@ -80,7 +80,7 @@ plt.show()
 
 print(f"Selected features: {np.where(np.linalg.norm(best_weights[0], axis=1, ord=2) != 0)}")
 print(f"The model score is {clf.score(X)}")
-print(f"Top gemclus was {max(geminis)}, which settles an optimum of {0.9 * max(geminis)}")
+print(f"Top gemini score was {max(geminis)}, which settles an optimum of {0.9 * max(geminis)}")
 
 ##########################################################################
 # Final Clustering

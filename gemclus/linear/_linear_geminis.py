@@ -7,6 +7,7 @@ from sklearn.utils._param_validation import Interval
 from sklearn.utils.extmath import softmax
 
 from .._base_gemini import _BaseGEMINI, _BaseMMD, _BaseWasserstein
+from ..gemini import MI
 
 
 class _LinearGEMINI(_BaseGEMINI, ABC):
@@ -239,76 +240,78 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
         )
 
 
+# noinspection PyPep8
 class RIM(_LinearGEMINI):
+    # noinspection PyPep8
     """ Implementation of the maximisation of the classical mutual information using a logistic regression with an
-    :math:`\ell_2` penalty on the weights. This implementation follows the framework described by Krause et al. in the
-    RIM paper.
+        :math:`\ell_2` penalty on the weights. This implementation follows the framework described by Krause et al. in the
+        RIM paper.
 
-    Parameters
-    ----------
-    n_clusters : int, default=3
-        The maximum number of clusters to form as well as the number of output neurons in the neural network.
+        Parameters
+        ----------
+        n_clusters : int, default=3
+            The maximum number of clusters to form as well as the number of output neurons in the neural network.
 
-    max_iter: int, default=1000
-        Maximum number of epochs to perform gradient descent in a single run.
+        max_iter: int, default=1000
+            Maximum number of epochs to perform gradient descent in a single run.
 
-    learning_rate: float, default=1e-3
-        Initial learning rate used. It controls the step-size in updating the weights.
+        learning_rate: float, default=1e-3
+            Initial learning rate used. It controls the step-size in updating the weights.
 
-    reg: float, default=1.0
-        Regularisation hyperparameter for the $\ell_2$ weight penalty.
+        reg: float, default=1.0
+            Regularisation hyperparameter for the $\ell_2$ weight penalty.
 
-    solver: {'sgd','adam'}, default='adam'
-        The solver for weight optimisation.
+        solver: {'sgd','adam'}, default='adam'
+            The solver for weight optimisation.
 
-        - 'sgd' refers to stochastic gradient descent.
-        - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
+            - 'sgd' refers to stochastic gradient descent.
+            - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
 
-    batch_size: int, default=None
-        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+        batch_size: int, default=None
+            The size of batches during gradient descent training. If set to None, the whole data will be considered.
 
-    verbose: bool, default=False
-        Whether to print progress messages to stdout
+        verbose: bool, default=False
+            Whether to print progress messages to stdout
 
-    random_state: int, RandomState instance, default=None
-        Determines random number generation for weights and bias initialisation.
-        Pass an int for reproducible results across multiple function calls.
+        random_state: int, RandomState instance, default=None
+            Determines random number generation for weights and bias initialisation.
+            Pass an int for reproducible results across multiple function calls.
 
-    Attributes
-    ----------
-    W_: ndarray of shape (n_features_in, n_clusters)
-        The linear weights of model
-    b_: ndarray of shape (1, n_clusters)
-        The biases of the model
-    optimiser_: `AdamOptimizer` or `SGDOptimizer`
-        The optimisation algorithm used for training depending on the chosen solver parameter.
-    labels_: ndarray of shape (n_samples)
-        The labels that were assigned to the samples passed to the :meth:`fit` method.
-    n_iter_: int
-        The number of iterations that the model took for converging.
+        Attributes
+        ----------
+        W_: ndarray of shape (n_features_in, n_clusters)
+            The linear weights of model
+        b_: ndarray of shape (1, n_clusters)
+            The biases of the model
+        optimiser_: `AdamOptimizer` or `SGDOptimizer`
+            The optimisation algorithm used for training depending on the chosen solver parameter.
+        labels_: ndarray of shape (n_samples)
+            The labels that were assigned to the samples passed to the :meth:`fit` method.
+        n_iter_: int
+            The number of iterations that the model took for converging.
 
-    References
-    ----------
-    RIM - Discriminative Clustering by Regularized Information Maximization
-        Ryan Gomes, Andreas Krause, Pietro Perona. 2010.
+        References
+        ----------
+        RIM - Discriminative Clustering by Regularized Information Maximization
+            Ryan Gomes, Andreas Krause, Pietro Perona. 2010.
 
-    See Also
-    --------
-    LinearMMD: logistic regression trained for clustering with the MMD GEMINI
+        See Also
+        --------
+        LinearMMD: logistic regression trained for clustering with the MMD GEMINI
 
-    Examples
-    --------
-    >>> from sklearn.datasets import load_iris
-    >>> from gemclus.linear import RIM
-    >>> X,y=load_iris(return_X_y=True)
-    >>> clf = RIM(learning_rate=1e-2, random_state=0).fit(X)
-    >>> clf.predict(X[:2,:])
-    array([0, 0])
-    >>> clf.predict_proba(X[:2,:]).shape
-    (2, 3)
-    >>> clf.score(X)
-    0.00962912118121384
-    """
+        Examples
+        --------
+        >>> from sklearn.datasets import load_iris
+        >>> from gemclus.linear import RIM
+        >>> X,y=load_iris(return_X_y=True)
+        >>> clf = RIM(learning_rate=1e-2, random_state=0).fit(X)
+        >>> clf.predict(X[:2,:])
+        array([0, 0])
+        >>> clf.predict_proba(X[:2,:]).shape
+        (2, 3)
+        >>> clf.score(X)
+        0.00962912118121384
+        """
 
     _parameter_constraints: dict = {
         **_LinearGEMINI._parameter_constraints,
@@ -329,30 +332,8 @@ class RIM(_LinearGEMINI):
         )
         self.reg = reg
 
-    def _compute_affinity(self, X, y=None):
-        return None
-
-    def _compute_gemini(self, y_pred, K, return_grad=False):
-        # Start by computing mutual information
-        p_y_x = np.clip(y_pred, 1e-12, 1 - 1e-12)
-        p_y = p_y_x.mean(0)
-
-        log_p_y_x = np.log(p_y_x)
-        log_p_y = np.log(p_y)
-
-        cluster_entropy = np.sum(p_y * log_p_y)
-        prediction_entropy = np.sum(np.mean(p_y_x * log_p_y_x, axis=0))
-
-        mutual_information = prediction_entropy - cluster_entropy
-
-        if return_grad:
-            gradient_mi = -log_p_y_x / log_p_y_x.shape[0] + log_p_y
-            return mutual_information, -gradient_mi
-        else:
-            return mutual_information
-
-    def compute_penalty(self):
-        return self.reg * np.sum(self.W_ * self.W_)
+    def get_gemini(self):
+        return MI()
 
     def _update_weights(self, weights, gradients):
         # Add the regularisation gradient on the weight matrix
