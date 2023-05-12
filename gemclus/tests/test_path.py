@@ -41,7 +41,10 @@ def test_sparse_stability(clf_class, data):
 
     gemini_score = clf.score(data)
 
-    assert gemini_score >= 0.9 * max(geminis)
+    # Locate the scores when using all features
+    full_feature_models = np.where(np.array(n_features) == data.shape[1])[0]
+
+    assert gemini_score >= 0.9 * max(np.array(geminis)[full_feature_models])
 
 
 def test_weights_coherence(data):
@@ -140,6 +143,7 @@ def test_erroneous_threshold(clf_class, data):
     assert np.allclose(np.array(alphas_v1), np.array(alphas_v2))
     assert np.allclose(np.array(n_features_v1), np.array(n_features_v2))
 
+
 @pytest.mark.parametrize(
     "clf_class",
     [SparseMLPMMD, SparseLinearMMD]
@@ -148,4 +152,4 @@ def test_batch_path(clf_class, data):
     clf = clf_class(batch_size=50, random_state=0, max_iter=100)
 
     best_weights_v1, geminis_v1, penalties_v1, alphas_v1, n_features_v1 = clf.path(data, restore_best_weights=False,
-                                                                                   min_features=data.shape[1]-1)
+                                                                                   min_features=data.shape[1] - 1)

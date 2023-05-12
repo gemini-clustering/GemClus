@@ -61,7 +61,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
     if clf.verbose:
         print("Starting initial training with alpha = 0")
     clf.fit(X)
-    best_gemini_score = 0
+    best_gemini_score = clf.score(X)  # Best gemini score only when using all features
     gemini_objective = clf.get_gemini()
     weights = clf._get_weights()
     best_weights = [w.copy() for w in weights]
@@ -139,10 +139,10 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
                   f" {clf._n_selected_features().item()}")
 
         alpha *= alpha_multiplier
-        if iteration_gemini_score >= best_gemini_score:
+        if iteration_gemini_score >= best_gemini_score and clf._n_selected_features() == X.shape[1]:
             best_gemini_score = iteration_gemini_score
             if clf.verbose:
-                print("Best GEMINI score so far, saving it.")
+                print("Best GEMINI score so far using all features, saving it.")
 
         if iteration_gemini_score >= keep_threshold * best_gemini_score:
             best_weights = [w.copy() for w in weights]
