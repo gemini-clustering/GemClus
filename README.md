@@ -53,4 +53,5 @@ the France Canada Research Fund (FFCR) for their contribution to the project. Th
 EU Horizon 2020 project AI4Media, under contract no. 951911.
 
 Also many many thanks to Pierre-Alexandre Mattei, Frederic Precioso and Charles Bouveyron for their contribution
-in the GEMINI project. Thanks as well go to Jhonatan Torres for his insights on the development.
+in the GEMINI project, as well as Mickaël Leclercq and Arnaud Droit. Special thanks go to Jhonatan Torres for his
+insights on the development.
