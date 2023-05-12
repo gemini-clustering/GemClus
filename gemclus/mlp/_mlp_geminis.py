@@ -28,7 +28,7 @@ class _MLPGEMINI(_BaseGEMINI, ABC):
         )
         self.n_hidden_dim = n_hidden_dim
 
-    def _init_params(self, random_state):
+    def _init_params(self, random_state, X=None):
         in_threshold = np.sqrt(1 / self.n_features_in_)
         hidden_threshold = np.sqrt(1 / self.n_hidden_dim)
         self.W1_ = random_state.uniform(-in_threshold, in_threshold, size=(self.n_features_in_, self.n_hidden_dim))

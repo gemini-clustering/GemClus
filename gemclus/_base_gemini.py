@@ -78,7 +78,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         self.random_state = random_state
 
     @abstractmethod
-    def _init_params(self, random_state):
+    def _init_params(self, random_state, X=None):
         """
         Initialise the set of parameters :math:`\theta` parameters of the model that are used to compute
         :math:`p_\theta(y|x)`.
@@ -87,6 +87,9 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         ----------
         random_state: RandomState instance
             Determines random number generation for weights and bias initialisation.
+
+        X: ndarray of shape (n_samples, n_features), default=None
+            The data to fit in case it is needed for a special initialisation of the weights.
         """
         pass
 
@@ -158,6 +161,44 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         """
         pass
 
+    def _batchify(self, X, affinity_matrix=None, random_state=None):
+        """
+        Yields elements of X and its corresponding affinity matrix in batches with a uniform random sampling.
+
+        Parameters
+        ----------
+        X: ndarray of shape (n_samples, n_features)
+            Training instances to cluster
+
+        affinity_matrix: ndarray of shape (n_samples, n_samples) or None
+            The affinity computed between all elements of `X`. Setting to None means the GEMINI doe snot need any
+            affinity.
+
+        random_state: int, RandomState instance, default=None
+
+        Returns
+        -------
+        X_batch: ndarray of shape (n_batch, n_features)
+            The batch of data elements
+
+        affinity_batch: ndarray of shape (n_batch, n_batch) or None
+            The affinity values of the corresponding elements of the data batch. If the parameter `affinity_matrix` was
+            None, then None is returned.
+        """
+        random_state = check_random_state(random_state)
+        all_indices = random_state.permutation(len(X))
+        batch_size = len(X) if self.batch_size is None else self.batch_size
+        j = 0
+        while j < len(X):
+            batch_indices = all_indices[j:j + batch_size]
+            X_batch = X[batch_indices]
+            if affinity_matrix is not None:
+                affinity_batch = affinity_matrix[batch_indices][:, batch_indices]
+            else:
+                affinity_batch = None
+            yield X_batch, affinity_batch
+            j += batch_size
+
     def fit(self, X, y=None):
         """Compute GEMINI clustering.
 
@@ -180,18 +221,13 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         X = check_array(X)
         X = self._validate_data(X, accept_sparse=True, dtype=np.float64, ensure_min_samples=self.n_clusters)
 
-        if self.batch_size is None:
-            batch_size = len(X)
-        else:
-            batch_size = self.batch_size
-
         # Fix the random seed
         random_state = check_random_state(self.random_state)
 
         # Initialise the weights
         if self.verbose:
             print("Initialising parameters")
-        self._init_params(random_state)
+        self._init_params(random_state, X)
         weights = self._get_weights()
         gemini = self.get_gemini()
 
@@ -210,22 +246,11 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         # Now, iterate for gradient descent
         for i in range(self.max_iter):
             # Create batches
-            j = 0
-            all_indices = random_state.permutation(len(X))
-            while j < len(X):
-                batch_indices = all_indices[j:j + batch_size]
-                X_batch = X[batch_indices]
-                if affinity is None:
-                    affinity_batch = None  # Specific case of f-div GEMINI
-                else:
-                    affinity_batch = affinity[batch_indices][:, batch_indices]
-
+            for X_batch, affinity_batch in self._batchify(X, affinity, random_state):
                 y_pred = self._infer(X_batch)
                 _, grads = gemini(y_pred, affinity_batch, return_grad=True)
                 grads = self._compute_grads(X_batch, y_pred, grads)
                 self._update_weights(weights, grads)
-
-                j += batch_size
 
         if self.verbose:
             print("Finished")

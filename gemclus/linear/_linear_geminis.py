@@ -27,7 +27,7 @@ class _LinearGEMINI(_BaseGEMINI, ABC):
             random_state=random_state
         )
 
-    def _init_params(self, random_state):
+    def _init_params(self, random_state, X=None):
         in_threshold = np.sqrt(1 / self.n_features_in_)
         self.W_ = random_state.uniform(-in_threshold, in_threshold, size=(self.n_features_in_, self.n_clusters))
         self.b_ = random_state.uniform(-in_threshold, in_threshold, size=(1, self.n_clusters))

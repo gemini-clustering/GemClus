@@ -1,10 +1,13 @@
 import pytest
 from sklearn.datasets import load_iris
 from sklearn.utils.estimator_checks import check_estimator
-from sklearn.utils.estimator_checks import check_clustering
+from sklearn.utils.estimator_checks import check_clustering, check_methods_sample_order_invariance,\
+    check_methods_subset_invariance
 
 from ..linear import LinearWasserstein, LinearMMD, RIM
 from ..mlp import MLPMMD, MLPWasserstein
+from ..nonparametric import CategoricalWasserstein, CategoricalMMD
+from ..nonparametric._categorical_models import _CategoricalGEMINI
 from ..sparse import SparseMLPMMD, SparseLinearMMD
 
 
@@ -16,7 +19,8 @@ def data():
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearMMD(), MLPMMD(), LinearWasserstein(), MLPWasserstein(), SparseLinearMMD(), SparseMLPMMD(), RIM()]
+    [LinearMMD(), MLPMMD(), LinearWasserstein(), MLPWasserstein(), SparseLinearMMD(), SparseMLPMMD(), RIM(),
+     CategoricalMMD(), CategoricalWasserstein()]
 )
 def test_default_clf_init(clf):
     assert clf.learning_rate == 1e-3
@@ -35,6 +39,18 @@ def test_all_linear_attributes(clf, data):
     clf.fit(data)
     assert hasattr(clf, 'W_')
     assert hasattr(clf, 'b_')
+    assert hasattr(clf, 'optimiser_')
+    assert hasattr(clf, 'labels_')
+    assert hasattr(clf, 'n_iter_')
+
+@pytest.mark.parametrize(
+    "clf",
+    [CategoricalMMD, CategoricalWasserstein]
+)
+def test_all_categorical_attributes(clf, data):
+    clf = clf(max_iter=1)
+    clf.fit(data)
+    assert hasattr(clf, 'logits_')
     assert hasattr(clf, 'optimiser_')
     assert hasattr(clf, 'labels_')
     assert hasattr(clf, 'n_iter_')
@@ -81,7 +97,7 @@ def test_all_sparse_linear_attributes(clf, data):
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearMMD(), MLPMMD(), SparseMLPMMD(), SparseLinearMMD()]
+    [LinearMMD(), MLPMMD(), SparseMLPMMD(), SparseLinearMMD(), CategoricalMMD()]
 )
 def test_default_mmd(clf):
     assert clf.kernel == "linear"
@@ -90,7 +106,7 @@ def test_default_mmd(clf):
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearWasserstein(), MLPWasserstein()]
+    [LinearWasserstein(), MLPWasserstein(), CategoricalWasserstein()]
 )
 def test_default_wasserstein(clf):
     assert clf.metric == "euclidean"
@@ -108,6 +124,19 @@ def test_all_estimators(estimator):
         if check.func == check_clustering:
             # The check clustering function tests if we output as many clusters as promised,
             # But since GEMINI may have fewer clusters, this test will never be satisfied
+            continue
+        if check.func == check_methods_sample_order_invariance and isinstance(estimator, _CategoricalGEMINI):
+            continue
+        check(clf)
+
+@pytest.mark.parametrize(
+    "estimator",
+    [CategoricalMMD(max_iter=5), CategoricalWasserstein(max_iter=5)]
+)
+def test_categorical_estimators(estimator):
+    check_iterator = check_estimator(estimator, generate_only=True)
+    for clf, check in check_iterator:
+        if check.func in [check_clustering, check_methods_sample_order_invariance, check_methods_subset_invariance]:
             continue
         check(clf)
 

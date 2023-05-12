@@ -61,7 +61,14 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
     if clf.verbose:
         print("Starting initial training with alpha = 0")
     clf.fit(X)
-    best_gemini_score = clf.score(X)  # Best gemini score only when using all features
+
+    generator = check_random_state(clf.random_state)
+    if clf.batch_size is not None:
+        batch_size = clf.batch_size
+    else:
+        batch_size = len(X)
+
+    best_gemini_score, _ = compute_val_score(clf, X, batch_size)  # Best gemini score only when using all features
     gemini_objective = clf.get_gemini()
     weights = clf._get_weights()
     best_weights = [w.copy() for w in weights]
@@ -71,20 +78,14 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
 
     affinity = gemini_objective.compute_affinity(X)
 
-    generator = check_random_state(clf.random_state)
-    if clf.batch_size is not None:
-        batch_size = clf.batch_size
-    else:
-        batch_size = len(X)
-
     alphas = []
     n_features = []
     geminis = []
     group_lasso_penalties = []
 
     # Re-initialise the optimiser to SGD with 0.9 momentum (default option), to follow the torch version
-    # nesterov acceleration is set to False by default
-    clf.optimiser_ = SGDOptimizer(weights, clf.learning_rate, nesterov=False)
+    # nesterov acceleration is set to True by default
+    clf.optimiser_ = SGDOptimizer(weights, clf.learning_rate)
 
     while clf._n_selected_features() > min_features:
         clf.alpha = alpha
@@ -128,14 +129,17 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
 
             i += 1
 
+        if np.isnan(iteration_gemini_score):
+            break
+
         alphas.append(alpha)
         n_features.append(clf._n_selected_features().item())
         geminis.append(iteration_gemini_score)
         group_lasso_penalties.append(clf._group_lasso_penalty())
 
         if clf.verbose:
-            print(f"Finished after {i} iterations. Current iteration score is {iteration_gemini_score - iteration_l1}. "
-                  f"Current GEMINI score is {iteration_gemini_score}. Number of features is"
+            print(f"Finished after {i} iterations. Current iteration score is {iteration_l1 - iteration_gemini_score}. "
+                  f"\t(GEMINI: {iteration_gemini_score}, L1: {iteration_l1}). Number of features is"
                   f" {clf._n_selected_features().item()}")
 
         alpha *= alpha_multiplier
@@ -248,8 +252,8 @@ class _SparseMLPGEMINI(_MLPGEMINI, ABC):
         self.alpha = alpha
         self.groups = groups
 
-    def _init_params(self, random_state):
-        super()._init_params(random_state)
+    def _init_params(self, random_state, X=None):
+        super()._init_params(random_state, X)
         threshold = np.sqrt(1 / self.n_features_in_)
         self.W_skip_ = random_state.uniform(-threshold, threshold, size=(self.n_features_in_, self.n_clusters))
 
