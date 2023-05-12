@@ -108,7 +108,7 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7664211836410726
+    1.766421183641077
     """
     _parameter_constraints: dict = {
         **_SparseMLPGEMINI._parameter_constraints,

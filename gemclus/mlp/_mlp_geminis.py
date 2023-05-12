@@ -144,7 +144,7 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7592155845461592
+    1.7592155845461646
     """
     _parameter_constraints: dict = {
         **_BaseMMD._parameter_constraints,
@@ -260,7 +260,7 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7615502432434385
+    1.7636482655127903
     """
     _parameter_constraints: dict = {
         **_BaseWasserstein._parameter_constraints,

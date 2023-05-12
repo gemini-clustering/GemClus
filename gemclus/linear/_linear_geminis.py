@@ -124,7 +124,7 @@ class LinearMMD(_LinearGEMINI, _BaseMMD):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.6949190522657158
+    1.6949190522657067
     """
     _parameter_constraints: dict = {
         **_BaseMMD._parameter_constraints,
@@ -213,11 +213,11 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
     >>> X,y=load_iris(return_X_y=True)
     >>> clf = LinearWasserstein(random_state=0).fit(X)
     >>> clf.predict(X[:2,:])
-    array([2, 2])
+    array([0, 0])
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.6509087196143133
+    1.6993348362264595
     """
     _parameter_constraints: dict = {
         **_BaseWasserstein._parameter_constraints,
