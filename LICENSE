@@ -1,3 +1,13 @@
+Releases 0.0.x and 0.1.0 of GemClus were distributed under the GNUv3 license only.
+
+Other releases 0.1.x and following are released under dual licensing, both Open Source GNUv3 and a commercial license when
+the former becomes two restrictive.
+
+We informally describe below our license schema and the rights we give to our users. Do not hesitate
+contacting us for support or informations.
+
+# Open source License
+
 GemClus - A package for discriminative clustering with GEMINI
 Copyright (C) 2023  Louis Ohl
 
@@ -13,3 +23,14 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# Commercial License
+
+In cases where the constraints of the Open Source license prevent you from
+using GemClus, you may buy a commercial license for GemClus or parts of
+GemClus. The commercial offer is adapted to academic/research and industry
+customers.
+
+Please contact Louis Ohl (louiso@kth.se), Pierre-Alexandre Mattei
+(pierre-alexandre.mattei@inria.fr) and Frédéric Precioso
+(frederic.precioso@univ-cotedazur.fr) for such considerations.
