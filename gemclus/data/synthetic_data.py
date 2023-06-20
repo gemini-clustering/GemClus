@@ -12,7 +12,7 @@ from sklearn.utils._param_validation import validate_params, Interval, Iterable
         "n": [Interval(Integral, 1, None, closed="left")],
         "loc": ["array-like"],
         "scale": ["array-like"],
-        "pvals": ["array-like", Iterable[float]],
+        "pvals": ["array-like"],
         "random_state": ["random_state"]
     }
 )
