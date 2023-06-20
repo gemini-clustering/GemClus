@@ -1,5 +1,11 @@
 # History of changes
 
+## 0.1.1
+
++ Fixing the ABCMeta parameter validation problem for the `draw_gmm` method for retrocompatibility with Python 3.8.
++ Constraining the package to Python>=3.8 to respect the requirements of the package.
++ Minor fix on the `get_selection` method for the Linear sparse models to respect the 1d output shape of the array.
+
 ## 0.1.0
 
 + Isolating the definition of GEMINIs in a separate classes for external usages: `gemini.MMDOvO`, `gemini.WassersteinOvA` etc.
