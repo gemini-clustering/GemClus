@@ -483,7 +483,7 @@ class _SparseLinearGEMINI(_LinearGEMINI, ABC):
         ind: ndarray
             The indices of the selected features.
         """
-        return np.nonzero(np.linalg.norm(self.W_, axis=1, ord=2))
+        return np.nonzero(np.linalg.norm(self.W_, axis=1, ord=2))[0]
 
     def _group_lasso_penalty(self):
         return np.linalg.norm(self.W_, axis=1, ord=2).sum()
