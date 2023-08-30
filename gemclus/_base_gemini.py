@@ -96,7 +96,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
     @abstractmethod
     def get_gemini(self):
         """
-        Initialises a :class:`gemclus.GEMINI` instance that will be used to train the model.
+        Initialise a :class:`gemclus.GEMINI` instance that will be used to train the model.
 
         Returns
         -------
@@ -163,7 +163,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
 
     def _batchify(self, X, affinity_matrix=None, random_state=None):
         """
-        Yields elements of X and its corresponding affinity matrix in batches with a uniform random sampling.
+        Yield elements of X and its corresponding affinity matrix in batches with a uniform random sampling.
 
         Parameters
         ----------
@@ -308,7 +308,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         return y_pred
 
     def predict(self, X):
-        """ A reference implementation of a prediction for a classifier.
+        """ Return the cluster membership of samples. This can only be called after the model was fit to some data.
 
         Parameters
         ----------
@@ -368,10 +368,12 @@ class _BaseMMD(_BaseGEMINI, ABC):
     learning_rate: float, default=1e-3
         Initial learning rate used. It controls the step-size in updating the weights.
 
-    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid'},
+    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
         default='linear'
         The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
         Currently, all kernel parameters are the default ones.
+        If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `y` of
+        `fit`, `fit_predict` and/or `score`.
 
     ovo: bool, default=False
         Whether to run the model using the MMD OvA (False) or the MMD OvO (True).
@@ -443,10 +445,12 @@ class _BaseWasserstein(_BaseGEMINI, ABC):
     learning_rate: float, default=1e-3
         Initial learning rate used. It controls the step-size in updating the weights.
 
-    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'},
+    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock', 'precomputed'},
         default='euclidean'
         The metric to use in combination with the Wasserstein objective. It corresponds to one value of
         `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.
+        If the metric is set to 'precomputed', then a custom distance matrix must be passed to the argument `y` of
+        `fit`, `fit_predict` and/or `score`.
 
     ovo: bool, default=False
         Whether to run the model using the Wasserstein OvA (False) or the Wasserstein OvO (True).

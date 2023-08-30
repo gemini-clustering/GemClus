@@ -24,10 +24,12 @@ class SparseLinearMMD(_SparseLinearGEMINI, _BaseMMD):
     learning_rate: float, default=1e-3
         Initial learning rate used. It controls the step-size in updating the weights.
 
-    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid'},
+    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
         default='linear'
         The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
         Currently, all kernel parameters are the default ones.
+        If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `y` of
+        `fit`, `fit_predict` and/or `score`.
 
     ovo: bool, default=False
         Whether to run the model using the MMD OvA (False) or the MMD OvO (True).

@@ -160,16 +160,18 @@ class MMDOvA(MMDGEMINI):
     and the data distribution.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{MMD}_\kappa(p(x|y)\|p(x|y))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{MMD}_\kappa(p(x|y)\|p(x|y))]
 
     where :math:`\kappa` is a kernel defined between the samples of the data space.
 
     Parameters
     ----------
-    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid'},
+    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
         default='linear'
         The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
         Currently, all kernel parameters are the default ones.
+        If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `affinity`
+        of the `evaluate` method.
 
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
@@ -215,16 +217,18 @@ class MMDOvO(MMDGEMINI):
     distributions:
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{MMD}_\kappa(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{MMD}_\kappa(p(x|y_a)\|p(x|y_b))]
 
     where :math:`\kappa` is a kernel defined between the samples of the data space.
 
     Parameters
     ----------
-    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid'},
+    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
         default='linear'
         The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
         Currently, all kernel parameters are the default ones.
+        If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `affinity`
+        of the `evaluate` method.
 
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
@@ -284,9 +288,11 @@ class WassersteinOvA(WassersteinGEMINI):
 
     Parameters
     ----------
-    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'}, default='euclidean'
+    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock', 'precomputed'}, default='euclidean'
         The metric to use in combination with the Wasserstein objective. It corresponds to one value of
         `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.
+        If the metric is set to 'precomputed', then a custom distance matrix must be passed to the argument `affinity`
+        of the `evaluate` method.
 
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
@@ -335,9 +341,11 @@ class WassersteinOvO(WassersteinGEMINI):
 
     Parameters
     ----------
-    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'}, default='euclidean'
+    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock', 'precomputed'}, default='euclidean'
         The metric to use in combination with the Wasserstein objective. It corresponds to one value of
         `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.
+        If the metric is set to 'precomputed', then a custom distance matrix must be passed to the argument `affinity`
+        of the `evaluate` method.
 
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
@@ -388,7 +396,7 @@ class MI(_GEMINI):
     probabilities:
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[D_\text{KL}(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{KL}(p(x|y)\|p(x))]
 
     Parameters
     ----------

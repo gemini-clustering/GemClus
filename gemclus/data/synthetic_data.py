@@ -4,7 +4,7 @@ from typing import Tuple
 import numpy as np
 from scipy.linalg import block_diag
 from sklearn.utils import check_random_state, check_array
-from sklearn.utils._param_validation import validate_params, Interval, Iterable
+from sklearn.utils._param_validation import validate_params, Interval
 
 
 @validate_params(
@@ -25,11 +25,11 @@ def draw_gmm(n, loc, scale, pvals, random_state=None) -> Tuple[np.ndarray, np.nd
     ----------
     n: int
         The number of samples to draw from the GMM.
-    loc: list of 1d ndarray
+    loc: list of K ndarray of shape (d,)
         A list containing the means of all components of the Gaussian mixture distributions.
-    scale: list of 2d ndarray
+    scale: list of K ndarray of shape (d,d)
         A list containing the covariances of all components of the Gaussian mixture distribution.
-    pvals: 1d ndarray
+    pvals: ndarray of shape (K,)
         The proportions of each component of the Gaussian mixture.
     random_state: int, RandomState instance or None, default=None
         Determines random number generation for dataset creation. Pass an int for reproducible output across
@@ -37,9 +37,9 @@ def draw_gmm(n, loc, scale, pvals, random_state=None) -> Tuple[np.ndarray, np.nd
 
     Returns
     -------
-    X: ndarray
-        The array containing the samples drawn from the mixture model.
-    y: ndarray
+    X: ndarray of shape (n, d)
+        The array containing the samples drawn from the mixture model. d is the
+    y: ndarray of shape (n,)
         The component from which each sample originates.
     """
     loc = check_array(loc, ensure_2d=True, ensure_min_samples=2, input_name="Means")
@@ -156,9 +156,9 @@ def gstm(n=500, alpha=2, df=1, random_state=None):
 
     Returns
     -------
-    X: ndarray
+    X: ndarray of shape (n,2)
         The samples of the dataset in an array of shape n_samples x n_features
-    y: ndarray
+    y: ndarray of shape (n,)
         The component of the GMM from which each sample was drawn.
 
     References
@@ -218,9 +218,9 @@ def celeux_one(n=300, p=20, mu=1.7, random_state=None) -> Tuple[np.ndarray, np.n
 
     Returns
     -------
-    X: ndarray
+    X: ndarray of shape (n, 5+p)
         The samples of the dataset in an array of shape n_samples x n_features
-    y: ndarray
+    y: ndarray of shape (n,)
         The component of the GMM from which each sample was drawn.
 
     References
@@ -267,9 +267,9 @@ def celeux_two(n=2000, random_state=None) -> Tuple[np.ndarray, np.ndarray]:
 
     Returns
     -------
-    X: ndarray
+    X: ndarray of shape (n, 14)
         The samples of the dataset in an array of shape n_samples x n_features
-    y: ndarray
+    y: ndarray of shape (n,)
         The component of the GMM from which each sample was drawn.
 
     References

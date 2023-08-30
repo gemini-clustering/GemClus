@@ -33,7 +33,10 @@ class _MLPGEMINI(_BaseGEMINI, ABC):
         hidden_threshold = np.sqrt(1 / self.n_hidden_dim)
         self.W1_ = random_state.uniform(-in_threshold, in_threshold, size=(self.n_features_in_, self.n_hidden_dim))
         self.b1_ = random_state.uniform(-in_threshold, in_threshold, size=(1, self.n_hidden_dim))
-        self.W2_ = random_state.uniform(-hidden_threshold, hidden_threshold, size=(self.n_hidden_dim, self.n_clusters))
+        self.W2_ = random_state.u    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'},
+        default='euclidean'
+        The metric to use in combination with the Wasserstein objective. It corresponds to one value of
+        `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.niform(-hidden_threshold, hidden_threshold, size=(self.n_hidden_dim, self.n_clusters))
         self.b2_ = random_state.uniform(-hidden_threshold, hidden_threshold, size=(1, self.n_clusters))
 
     def _compute_grads(self, X, y_pred, gradient):
@@ -63,7 +66,7 @@ class _MLPGEMINI(_BaseGEMINI, ABC):
 
 
 class MLPMMD(_MLPGEMINI, _BaseMMD):
-    """ Implementation of the maximisation of the MMD-OvA GEMINI using a two-layer neural network as a clustering
+    """ Implementation of the maximisation of the MMD GEMINI using a two-layer neural network as a clustering
     distribution :math:`p(y|x)`.
 
     Parameters
@@ -80,10 +83,12 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
     n_hidden_dim: int, default=20
         The number of neurons in the hidden layer of the neural network.
 
-    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid'},
+    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
         default='linear'
         The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
         Currently, all kernel parameters are the default ones.
+        If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `y` of
+        `fit`, `fit_predict` and/or `score`.
 
     ovo: bool, default=False
         Whether to run the model using the MMD OvA (False) or the MMD OvO (True).
@@ -121,7 +126,7 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
     n_iter_: int
         The number of iterations that the model took for converging.
     H_: ndarray of shape (n_samples, n_hidden_dim)
-        The hidden representation of the samples after fitting.
+        The hidden representation of the samples after fitting.OvA
 
     References
     ----------
@@ -196,13 +201,15 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
     n_hidden_dim: int, default=20
         The number of neurons in the hidden layer of the neural network.
 
-    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'},
+    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock', 'precomputed'},
         default='euclidean'
         The metric to use in combination with the Wasserstein objective. It corresponds to one value of
-        `PAIRED_DISTANCES`.  Currently, all metric parameters are the default ones.
+        `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.
+        If the metric is set to 'precomputed', then a custom distance matrix must be passed to the argument `y` of
+        `fit`, `fit_predict` and/or `score`.
 
     ovo: bool, default=False
-        Whether to run the model using the MMD OvA (False) or the MMD OvO (True).
+        Whether to run the model using the Wasserstein OvA (False) or the Wasserstein OvO (True).
 
     solver: {'sgd','adam'}, default='adam'
         The solver for weight optimisation.
