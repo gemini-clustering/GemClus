@@ -33,10 +33,7 @@ class _MLPGEMINI(_BaseGEMINI, ABC):
         hidden_threshold = np.sqrt(1 / self.n_hidden_dim)
         self.W1_ = random_state.uniform(-in_threshold, in_threshold, size=(self.n_features_in_, self.n_hidden_dim))
         self.b1_ = random_state.uniform(-in_threshold, in_threshold, size=(1, self.n_hidden_dim))
-        self.W2_ = random_state.u    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock'},
-        default='euclidean'
-        The metric to use in combination with the Wasserstein objective. It corresponds to one value of
-        `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.niform(-hidden_threshold, hidden_threshold, size=(self.n_hidden_dim, self.n_clusters))
+        self.W2_ = random_state.uniform(-hidden_threshold, hidden_threshold, size=(self.n_hidden_dim, self.n_clusters))
         self.b2_ = random_state.uniform(-hidden_threshold, hidden_threshold, size=(1, self.n_clusters))
 
     def _compute_grads(self, X, y_pred, gradient):
