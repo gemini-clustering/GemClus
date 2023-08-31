@@ -6,7 +6,7 @@ The package was written to be a scikit-learn compatible extension.
 
 You can find the complete documentation of the package here: [https://gemini-clustering.github.io/](https://gemini-clustering.github.io/)
 
-The documentation for the latest updates is at: [https://gemini-clustering.github.io/master](https://gemini-clustering.github.io/master/)
+The documentation for the latest updates is at: [https://gemini-clustering.github.io/main](https://gemini-clustering.github.io/main/)
 
 ## Installation
 
