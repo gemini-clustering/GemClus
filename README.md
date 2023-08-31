@@ -4,7 +4,7 @@ The **gemclus**  package provides simple tools to perform discriminative cluster
 information (GEMINI).
 The package was written to be a scikit-learn compatible extension.
 
-You can find the complete documentation of the package here: `https://gemini-clustering.github.io/`
+You can find the complete documentation of the package here: [https://gemini-clustering.github.io/](https://gemini-clustering.github.io/)
 
 ## Installation
 
