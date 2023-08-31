@@ -16,7 +16,7 @@ jobs:
               echo "Merging $(cat merge.txt)";
               git remote add upstream https://github.com/gemini-clustering/GemClus.git;
               git pull --ff-only upstream "refs/pull/$(cat merge.txt)/merge";
-              git fetch upstream master;
+              git fetch upstream main;
             fi
 
       # Load our data
@@ -61,7 +61,7 @@ jobs:
           paths:
             - html
 
-  deploy_master:
+  deploy_main:
     docker:
       - image: circleci/python:3.6-jessie
     steps:
@@ -81,14 +81,14 @@ jobs:
           name: Deploy docs
           command: |
             set -e;
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+            if [ "${CIRCLE_BRANCH}" == "main" ]; then
               git config --global user.email "louis.ohl@inria.fr";
               git config --global user.name "oshillou";
               cd ~/gemini-clustering.github.io;
-              git checkout master
+              git checkout main
               git remote -v
               git fetch origin
-              git reset --hard origin/master
+              git reset --hard origin/main
               git clean -xdf
               echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
               cd master
@@ -96,7 +96,7 @@ jobs:
               touch .nojekyll;
               git add -A;
               git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
-              git push origin master;
+              git push origin main;
             else
               echo "No deployment (build: ${CIRCLE_BRANCH}).";
             fi
@@ -124,17 +124,17 @@ jobs:
             git config --global user.email "louis.ohl@inria.fr";
             git config --global user.name "oshillou";
             cd ~/gemini-clustering.github.io;
-            git checkout master
+            git checkout main
             git remote -v
             git fetch origin
-            git reset --hard origin/master
+            git reset --hard origin/main
             git clean -xdf
             echo "Deploying dev docs for ${CIRCLE_BRANCH}.";
             cp -a /tmp/build/html/* .;
             touch .nojekyll;
             git add -A;
             git commit -m "CircleCI update of dev docs (${CIRCLE_BUILD_NUM}).";
-            git push origin master;
+            git push origin main;
 workflows:
   version: 2
 
@@ -144,13 +144,13 @@ workflows:
           filters:
             tags:
               only: /[0-9]+(\.[0-9]+)*$/
-      - deploy_master:
+      - deploy_main:
           requires:
             - build_docs
           filters:
             branches:
               only:
-                - master
+                - main
       - deploy_tag:
           requires:
             - build_docs
