@@ -1,3 +1,5 @@
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/gemini-clustering/GemClus/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/gemini-clustering/GemClus/tree/main)
+
 # GEMCLUS - A package for discriminative clustering using GEMINI
 
 The **gemclus**  package provides simple tools to perform discriminative clustering using the generalised mutual
