@@ -4,10 +4,10 @@ from typing import Tuple
 import numpy as np
 from scipy.linalg import block_diag
 from sklearn.utils import check_random_state, check_array
-from sklearn.utils._param_validation import validate_params, Interval
+from sklearn.utils._param_validation import Interval
+from .._constraints import constraint_params
 
-
-@validate_params(
+@constraint_params(
     {
         "n": [Interval(Integral, 1, None, closed="left")],
         "loc": ["array-like"],
@@ -74,7 +74,7 @@ def draw_gmm(n, loc, scale, pvals, random_state=None) -> Tuple[np.ndarray, np.nd
     return np.concatenate(X, axis=0), y
 
 
-@validate_params(
+@constraint_params(
     {
         "n": [Interval(Integral, 1, None, closed="left")],
         "loc": ["array-like"],
@@ -126,7 +126,7 @@ def multivariate_student_t(n, loc, scale, df=10, random_state=None) -> np.ndarra
     return X
 
 
-@validate_params(
+@constraint_params(
     {
         "n": [Interval(Integral, 4, None, closed="left")],
         "alpha": [Interval(Real, 0, None, closed="neither")],
@@ -190,7 +190,7 @@ def gstm(n=500, alpha=2, df=1, random_state=None):
     return X[order], y[order]
 
 
-@validate_params(
+@constraint_params(
     {
         "n": [Interval(Integral, 1, None, closed="left")],
         "p": [Interval(Integral, 1, None, closed="left")],
@@ -245,7 +245,7 @@ def celeux_one(n=300, p=20, mu=1.7, random_state=None) -> Tuple[np.ndarray, np.n
     return np.concatenate([good_variables, noise], axis=1), y
 
 
-@validate_params(
+@constraint_params(
     {
         "n": [Interval(Integral, 1, None, closed="left")],
         "random_state": ["random_state"]

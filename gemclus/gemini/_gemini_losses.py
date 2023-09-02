@@ -1,4 +1,3 @@
-import warnings
 from abc import ABC, abstractmethod
 from numbers import Real
 
@@ -6,7 +5,8 @@ import numpy as np
 import ot
 from sklearn.metrics import pairwise_kernels, pairwise_distances
 from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRED_DISTANCES
-from sklearn.utils._param_validation import validate_params, StrOptions, Interval
+from sklearn.utils._param_validation import StrOptions, Interval
+from .._constraints import constraint_params
 
 AVAILABLE_GEMINIS = ["mmd", "wasserstein", "mi"]
 
@@ -20,13 +20,6 @@ class _GEMINI(ABC):
         self.epsilon = epsilon
 
     @abstractmethod
-    @validate_params(
-        {
-            "y_pred": ["array-like"],
-            "D": ["array-like"],
-            "return_grad": [bool]
-        }
-    )
     def evaluate(self, y_pred, affinity, return_grad=False):
         """
         Compute the GEMINI objective given the predictions :math:`$p(y|x)$` and an affinity matrix. The
@@ -81,7 +74,7 @@ class _GEMINI(ABC):
 
 class MMDGEMINI(_GEMINI, ABC):
 
-    @validate_params(
+    @constraint_params(
         {
             "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS) + ["precomputed"])), callable],
             "epsilon": [Interval(Real, 0, 1, closed="neither")]
@@ -118,7 +111,7 @@ class MMDGEMINI(_GEMINI, ABC):
 
 
 class WassersteinGEMINI(_GEMINI, ABC):
-    @validate_params(
+    @constraint_params(
         {
             "metric": [StrOptions(set(list(PAIRED_DISTANCES) + ["precomputed"]))],
             "epsilon": [Interval(Real, 0, 1, closed="neither")]
@@ -176,7 +169,12 @@ class MMDOvA(MMDGEMINI):
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
     """
-
+    @constraint_params(
+        {
+            "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS) + ["precomputed"])), callable],
+            "epsilon": [Interval(Real, 0, 1, closed="neither")]
+        }
+    )
     def __init__(self, kernel="linear", epsilon=1e-12):
         super().__init__(kernel, epsilon)
 
@@ -233,7 +231,12 @@ class MMDOvO(MMDGEMINI):
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
     """
-
+    @constraint_params(
+        {
+            "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS) + ["precomputed"])), callable],
+            "epsilon": [Interval(Real, 0, 1, closed="neither")]
+        }
+    )
     def __init__(self, kernel="linear", epsilon=1e-12):
         super().__init__(kernel, epsilon)
 
@@ -297,7 +300,12 @@ class WassersteinOvA(WassersteinGEMINI):
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
     """
-
+    @constraint_params(
+        {
+            "metric": [StrOptions(set(list(PAIRED_DISTANCES) + ["precomputed"]))],
+            "epsilon": [Interval(Real, 0, 1, closed="neither")]
+        }
+    )
     def __init__(self, metric="euclidean", epsilon=1e-12):
         super().__init__(metric, epsilon)
 
@@ -350,7 +358,12 @@ class WassersteinOvO(WassersteinGEMINI):
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
     """
-
+    @constraint_params(
+        {
+            "metric": [StrOptions(set(list(PAIRED_DISTANCES) + ["precomputed"]))],
+            "epsilon": [Interval(Real, 0, 1, closed="neither")]
+        }
+    )
     def __init__(self, metric="euclidean", epsilon=1e-12):
         super().__init__(metric, epsilon)
 
