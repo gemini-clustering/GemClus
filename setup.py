@@ -4,7 +4,10 @@ import codecs
 import os
 import re
 
+import numpy as np
 from setuptools import find_packages, setup
+from Cython.Build import cythonize
+from setuptools.extension import Extension
 
 # get __version__ from _version.py
 ver_file = os.path.join('gemclus', '__init__.py')
@@ -52,6 +55,7 @@ EXTRAS_REQUIRE = {
         'matplotlib'
     ]
 }
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 setup(name=DISTNAME,
       maintainer=MAINTAINER,
@@ -65,5 +69,11 @@ setup(name=DISTNAME,
       zip_safe=False,  # the package can run out of an .egg file
       classifiers=CLASSIFIERS,
       packages=find_packages(),
+      ext_modules=cythonize(Extension(
+            name="gemclus.tree._utils",
+            sources=["gemclus/tree/_utils.pyx"],
+            language="c++",
+            include_dirs=[np.get_include(), os.path.join(ROOT, "gemclus/tree")]
+        )),
       install_requires=INSTALL_REQUIRES,
       extras_require=EXTRAS_REQUIRE)
