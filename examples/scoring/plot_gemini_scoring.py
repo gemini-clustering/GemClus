@@ -37,7 +37,7 @@ p_y_given_x_2 = clf2.predict_proba(X)
 
 ##########################################################################
 # Scoring with GEMINI
-# -----------------
+# -------------------
 # We can now score the clustering performances of both model with GEMINI.
 
 # %%scoring
@@ -56,7 +56,7 @@ print(f"\t=>Naive Bayes: {clf2_score:.3f}")
 
 ##########################################################################
 # Supervised Scoring with GEMINI
-# -----------------
+# ------------------------------
 # By replacing the Euclidean distance for a label-informed distance
 # we can obtain a supervised metric.
 
