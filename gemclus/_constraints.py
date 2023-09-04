@@ -3,8 +3,10 @@ from inspect import signature
 
 from sklearn.utils import _param_validation as skparamvalid
 
+
 class InvalidParameterError(ValueError, TypeError):
     pass
+
 
 def check_constraint(local_constraint):
     if isinstance(local_constraint, str) and local_constraint == "array-like":
@@ -15,16 +17,18 @@ def check_constraint(local_constraint):
         return skparamvalid._Booleans()
     if local_constraint is callable:
         return skparamvalid._Callables()
+    if local_constraint is None:
+        return skparamvalid._NoneConstraint()
     if isinstance(local_constraint, (skparamvalid.Interval,
                                      skparamvalid.StrOptions,
                                      skparamvalid.Options)):
         return local_constraint
     raise ValueError(f"Unhandled constraint type: {local_constraint}")
 
+
 # Credit: this snippet of code was strongly inspired and taken
 # from scikit learn validate_params v1.2.2
 def constraint_params(parameter_constraints):
-
     def decorate_with_constraints(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -57,7 +61,7 @@ def constraint_params(parameter_constraints):
                     if is_satisfied:
                         break
                 if not is_satisfied:
-                    if len(local_constraints)==1:
+                    if len(local_constraints) == 1:
                         descriptor = f"{converted_constraints[0]}"
                     else:
                         descriptor = ", ".join([str(x) for x in converted_constraints[:-1]])
@@ -65,9 +69,9 @@ def constraint_params(parameter_constraints):
                     raise InvalidParameterError(f"The {param_name} parameter of {func.__name__} must "
                                                 f"be {descriptor}. Got {param_val} instead.")
 
-
-
             # Call function with safe args
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorate_with_constraints
