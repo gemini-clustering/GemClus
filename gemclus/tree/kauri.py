@@ -13,6 +13,35 @@ from sklearn.utils.validation import check_is_fitted
 
 from ._utils import find_best_split, gemini_objective, Split
 
+def print_kauri_tree(kauri_tree, feature_names=None):
+    assert isinstance(kauri_tree, Kauri), f"The passed instance is not a KauriTree, got: {kauri_tree.__class__}"
+    check_is_fitted(kauri_tree)
+    if feature_names is not None:
+        used_features = [x for x in kauri_tree.tree_.features if x is not None]
+        assert len(feature_names) >= len(np.unique(used_features)), ("Fewer feature names than used "
+                                                                                 "features by the tree were provided")
+
+    def print_node(node_id):
+        current_depth = kauri_tree.tree_.depths[node_id]
+        print("| "*current_depth, f"Node {node_id}", sep="")
+        left_child = kauri_tree.tree_.children_left[node_id]
+        right_child = kauri_tree.tree_.children_right[node_id]
+        if left_child == -1:
+            print("| "*current_depth, f"Cluster: {kauri_tree.tree_.target[node_id]}")
+            return
+        feature = kauri_tree.tree_.features[node_id]
+        threshold = kauri_tree.tree_.thresholds[node_id]
+        if feature_names is not None:
+            feature_name = feature_names[feature]
+        else:
+            feature_name = f"X[:, {feature}]"
+        print("| "*current_depth, "|=", f"{feature_name} <= {threshold}", sep="")
+        print_node(left_child)
+        print("| "*current_depth, "|=", f"{feature_name} > {threshold}", sep="")
+        print_node(right_child)
+
+    print_node(0)
+
 class Tree:
     def __init__(self):
         self.children_left = [-1]
@@ -129,7 +158,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
         The underlying Tree object. Please refer to `help(sklearn.tree._tree.Tree)` for attributes of Tree object.
 
     References
-    -----------
+    ----------
     FIXME: to be announced
     """
     _parameter_constraints: dict = {

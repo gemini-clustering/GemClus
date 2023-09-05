@@ -70,6 +70,28 @@ for selecting a subset of features which may enhance interpretability of cluster
     sparse.SparseLinearMMD
     sparse.SparseMLPMMD
 
+Tree models
+------------
+
+We propose clustering methods based on tree architectures. Thus rules are simultaneously constructed as the clustering
+is learnt.
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    tree.Kauri
+    tree.Douglas
+
+The following functions are intended to help understanding the structure of the above models by printing their
+inner rules.
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    tree.print_kauri_tree
+
 Dataset generation
 ===================
 

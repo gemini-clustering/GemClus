@@ -148,7 +148,7 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
         else:
             assert len(self.feature_mask) == X.shape[1], ("The boolean feature mask must have as "
                                                           "much entries as the number of features")
-            self.cut_points_list_ = [(i, random_state.normal(size=self.n_cuts, )) for i in range(X.shape[1]) \
+            self.cut_points_list_ = [(i, random_state.normal(size=self.n_cuts, )) for i in range(X.shape[1])
                                      if self.feature_mask[i]]
             num_leaf = int((self.n_cuts + 1) ** len(self.cut_points_list_))
 
@@ -211,10 +211,11 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
                     softmax_grad = binning_backprop.sum(axes_for_sum) / all_binnings[i]
 
                     bin_grad = all_binnings[i] * (
-                            softmax_grad - (all_binnings[i] * softmax_grad).sum(1, keepdims=True))  # Shape Nx(d+1) #FIXME: temperature
+                            softmax_grad - (all_binnings[i] * softmax_grad).sum(1, keepdims=True))  # Shape Nx(d+1)
                     bin_grad /= self.temperature
 
-                    # Gradient is directly on the bias, so we only need to do the cumsum backprop after summing on all samples
+                    # Gradient is directly on the bias, so we only need to do the cumsum backprop after summing on
+                    # all samples
 
                     # We remove the gradient on the constant [0]
                     bias_grad = bin_grad.sum(0)[1:]
