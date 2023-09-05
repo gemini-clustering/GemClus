@@ -34,7 +34,6 @@ def _check_structural_constraint(must_link, cannot_link):
 
             for pair in cannot_link:
                 pair_i, pair_j = pair
-                print(pair, i, j)
                 assert i != pair_i or j != pair_j, "Triangular contradiction in Must-link / Cannot-link constraints"
                 assert i != pair_j or j != pair_i, "Triangular contradiction in Must-link / Cannot-link constraints"
 
@@ -108,6 +107,11 @@ def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1
     assert factor > 0
 
     _check_linking_constraint(must_link, cannot_link)
+
+    if must_link is None:
+        must_link = []
+    if cannot_link is None:
+        cannot_link = []
 
     # We start by decorating the _batchify method such that we remember the indices of the samples
     def decorate_batch(func):

@@ -7,7 +7,7 @@ from gemclus.nonparametric import CategoricalMMD, CategoricalWasserstein
 from gemclus.linear import LinearMMD, LinearWasserstein
 from gemclus.sparse import SparseMLPMMD, SparseLinearMMD
 from gemclus.mlp import MLPMMD, MLPWasserstein
-from ..mcml import add_mlcl_constraint
+from ..mlcl import add_mlcl_constraint
 
 
 @pytest.mark.parametrize(
