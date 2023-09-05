@@ -23,6 +23,8 @@ def check_constraint(local_constraint):
                                      skparamvalid.StrOptions,
                                      skparamvalid.Options)):
         return local_constraint
+    if isinstance(local_constraint, type):
+        return skparamvalid._InstancesOf(local_constraint)
     raise ValueError(f"Unhandled constraint type: {local_constraint}")
 
 
