@@ -91,6 +91,7 @@ inner rules.
     :template: function.rst
 
     tree.print_kauri_tree
+    tree.print_douglas_rules
 
 Dataset generation
 ===================

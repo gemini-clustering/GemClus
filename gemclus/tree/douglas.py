@@ -1,8 +1,11 @@
+import itertools
 from abc import ABC
 from functools import reduce
 from numbers import Integral, Real
 
 import numpy as np
+
+from gemclus._constraints import constraint_params
 from gemclus.gemini import WassersteinGEMINI, MMDGEMINI, MI, WassersteinOvO
 from sklearn.base import ClusterMixin, BaseEstimator
 from sklearn.utils import check_array, check_random_state
@@ -36,7 +39,7 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
         the differences in probability whereas a low temperature produces distributions closer to delta Dirac
         distributions.
 
-    n_epochs: int, default=100
+    max_iter: int, default=100
         The number of epochs for training the model parameters.
 
     batch_size: int, default=None
@@ -73,7 +76,7 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
         "n_cuts": [Interval(Integral, 1, None, closed="left"), None],
         "feature_mask": [np.ndarray, None],
         "temperature": [Interval(Real, 0, None, closed="neither")],
-        "n_epochs": [Interval(Integral, 1, None, closed="left")],
+        "max_iter": [Interval(Integral, 1, None, closed="left")],
         "batch_size": [Interval(Integral, 1, None, closed="left"), None],
         "learning_rate": [Interval(Real, 0, None, closed="neither"), None],
         "gemini": [WassersteinGEMINI, MMDGEMINI, MI, None],
@@ -81,13 +84,13 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
         "random_state": ["random_state"]
     }
 
-    def __init__(self, n_clusters=3, n_cuts=1, feature_mask=None, temperature=0.1, n_epochs=100, batch_size=None,
+    def __init__(self, n_clusters=3, n_cuts=1, feature_mask=None, temperature=0.1, max_iter=100, batch_size=None,
                  learning_rate=1e-2, gemini=None, verbose=False, random_state=None):
         self.n_clusters = n_clusters
         self.n_cuts = n_cuts
         self.feature_mask = feature_mask
         self.temperature = temperature
-        self.n_epochs = n_epochs
+        self.max_iter = max_iter
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.gemini = gemini
@@ -168,7 +171,7 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
         affinity = gemini.compute_affinity(X, y)
 
         # Training algorithm
-        for epoch in range(self.n_epochs):
+        for epoch in range(self.max_iter):
             batch_idx = 0
             epoch_batch_order = random_state.permutation(len(X))
             while batch_idx * batch_size < len(X):
@@ -351,3 +354,158 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
         affinity = gemini.compute_affinity(X, y)
 
         return gemini(y_pred, affinity)
+
+
+@constraint_params({
+    "binnings": ["array-like"]
+})
+def _merge_rules(binnings):
+    """
+    Builds a set of rules that encompasses all binnings of a clustering. The methods returns lower and upper bounds
+    of rules that summarises how to be part of the binnings.
+
+    Parameters
+    ----------
+    binnings: ndarray of shape (n_binnings, n_features)
+        A 2d array where each entry describes a set of binning that belongs to a cluster.
+        For example, the entry [0,2,1] means that a sample is in a cluster if the feature 0 is in bin 0, feature 1
+        in bin 2 and feature 2 in bin 1.
+
+    Returns
+    -------
+    lower: ndarray of shape (n_rules, n_features)
+        A set of lower bounds for rules
+
+    upper: ndarray of shape (n_rules, n_features)
+        A set of upper bounds for rules.
+
+    """
+    seen = np.zeros(len(binnings), dtype=bool)
+    all_lowers, all_uppers = [], []
+
+    while seen.sum() != len(binnings):
+        best_rule = [0, 0]
+        best_count = 0
+        # Rules are built by fixing all features except one where we accept variability
+        for d in range(binnings.shape[1]):
+            sub_binnings = np.delete(binnings, d, axis=1)
+            for i in range(len(seen)):
+                # We seek the feature on which to allow variability which leverages the most explanation of
+                # the binnings
+                similar_items, = np.where(np.all(sub_binnings == sub_binnings[i], axis=1))
+                newly_explained = (~seen[similar_items]).sum()
+                if newly_explained > best_count:
+                    best_count = newly_explained
+                    best_rule = [i, d]
+
+        # Create the rules
+        segmented_binnings = np.delete(binnings, best_rule[1], axis=1)
+        rule_base = segmented_binnings[best_rule[0]]
+
+        matching_binnings, = np.where(np.all(segmented_binnings == rule_base, axis=1))
+        sorted_variability = sorted(list(set(binnings[matching_binnings, best_rule[1]])))
+
+        seen[matching_binnings] = True
+
+        start = 0
+        for i in range(len(sorted_variability) - 1):
+            # We may have discontinuous subsets, so we need to create
+            # several rules in such case
+            if sorted_variability[i] + 1 != sorted_variability[i + 1]:
+                lower = np.copy(binnings[best_rule[0]])
+                lower[best_rule[1]] = sorted_variability[start]
+                upper = np.copy(binnings[best_rule[0]])
+                upper[best_rule[1]] = sorted_variability[i]
+                start = i + 1
+                all_lowers += [np.expand_dims(lower, axis=0)]
+                all_uppers += [np.expand_dims(upper, axis=0)]
+        lower = np.copy(binnings[best_rule[0]])
+        lower[best_rule[1]] = sorted_variability[start]
+        upper = np.copy(binnings[best_rule[0]])
+        upper[best_rule[1]] = sorted_variability[len(sorted_variability) - 1]
+        all_lowers += [np.expand_dims(lower, axis=0)]
+        all_uppers += [np.expand_dims(upper, axis=0)]
+
+    return np.concatenate(all_lowers, axis=0), np.concatenate(all_uppers, axis=0)
+
+
+def _print_rule(lower, upper, cut_points, feature_names=None):
+    print("Rule")
+    for index in range(len(lower)):
+        if feature_names is None:
+            rule = f"X[:, {index}]"
+        else:
+            rule = f"{feature_names[index]}"
+        if lower[index] != 0:
+            threshold = cut_points[index][lower[index] - 1]
+            rule = f"{threshold} ({lower[index] - 1}) < " + rule
+        if upper[index] != len(cut_points[index]):
+            threshold = cut_points[index][upper[index]]
+            rule = rule + f" < {threshold} ({upper[index]})"
+        print(f"\t{rule}")
+
+
+@constraint_params({
+    "douglas_tree": [Douglas],
+    "feature_names": ["array-like", None],
+    "step": [Interval(Real, 0, None, closed="neither")],
+    "simplify": ["bool"]
+})
+def print_douglas_rules(douglas_tree, feature_names=None, step=1, simplify=True):
+    """
+    Extracts all cut points from a trained `Douglas` instance and generate prints the set of rules to satisfy
+    for each clusters.
+
+    The rules are built as the conjunction of the feature binnings in which a sample must be. The threshold values
+    correspond to the cut points. In order to compute the cluster assignment per binning combination, the mean values
+    of the binnings ar taken. For the outer binnings, an offset `step` is added.
+
+    Parameters
+    ----------
+    douglas_tree: Douglas
+        A Douglas tree instance that was trained.
+
+    feature_names: array of shape (n_features,) or None
+        The name to use to describe the features. If set to None, a default print "X[:,i]" is proposed.
+
+    step: float, default=1
+        The offset to add to outer binning values when computing the combinations of binnings for cluster assignments
+
+    simplify: bool, default=True
+        Whether to display all combinations of binnings per cluster (False) or to minimise at best the number of rules
+        per cluster (True).
+    """
+    check_is_fitted(douglas_tree)
+
+    X = []
+    all_binnings = np.array(list(itertools.product(range(douglas_tree.n_cuts + 1), repeat=douglas_tree.n_features_in_)))
+    if feature_names is not None:
+        assert len(feature_names)==all_binnings.shape[1], "Please provide as much feature names as features"
+
+    sorted_cut_points = [sorted(x[1]) for x in douglas_tree.cut_points_list_]
+
+    for selection in all_binnings:
+        sample = []
+        for i in range(douglas_tree.n_features_in_):
+            if selection[i] == 0:
+                sample += [sorted_cut_points[i][selection[i]] - step]
+            elif selection[i] == douglas_tree.n_cuts:
+                sample += [sorted_cut_points[i][selection[i] - 1] + step]
+            else:
+                upper = sorted_cut_points[i][selection[i]]
+                lower = sorted_cut_points[i][selection[i] - 1]
+                sample += [(upper - lower) / 2]
+        X += [np.array(sample)]
+    y_pred_rules = douglas_tree.predict(np.array(X))
+
+    for k in np.unique(y_pred_rules):
+        print(f"Cluster {k}")
+        all_samples, = np.where(y_pred_rules == k)
+
+        if not simplify:
+            for i in all_samples:
+                _print_rule(all_binnings[i], all_binnings[i], sorted_cut_points, feature_names)
+        else:
+            lower, upper = _merge_rules(all_binnings[all_samples])
+            for lo, up in zip(lower, upper):
+                _print_rule(lo, up, sorted_cut_points, feature_names)

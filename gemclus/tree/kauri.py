@@ -12,35 +12,8 @@ from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_is_fitted
 
 from ._utils import find_best_split, gemini_objective, Split
+from .._constraints import constraint_params
 
-def print_kauri_tree(kauri_tree, feature_names=None):
-    assert isinstance(kauri_tree, Kauri), f"The passed instance is not a KauriTree, got: {kauri_tree.__class__}"
-    check_is_fitted(kauri_tree)
-    if feature_names is not None:
-        used_features = [x for x in kauri_tree.tree_.features if x is not None]
-        assert len(feature_names) >= len(np.unique(used_features)), ("Fewer feature names than used "
-                                                                                 "features by the tree were provided")
-
-    def print_node(node_id):
-        current_depth = kauri_tree.tree_.depths[node_id]
-        print("| "*current_depth, f"Node {node_id}", sep="")
-        left_child = kauri_tree.tree_.children_left[node_id]
-        right_child = kauri_tree.tree_.children_right[node_id]
-        if left_child == -1:
-            print("| "*current_depth, f"Cluster: {kauri_tree.tree_.target[node_id]}")
-            return
-        feature = kauri_tree.tree_.features[node_id]
-        threshold = kauri_tree.tree_.thresholds[node_id]
-        if feature_names is not None:
-            feature_name = feature_names[feature]
-        else:
-            feature_name = f"X[:, {feature}]"
-        print("| "*current_depth, "|=", f"{feature_name} <= {threshold}", sep="")
-        print_node(left_child)
-        print("| "*current_depth, "|=", f"{feature_name} > {threshold}", sep="")
-        print_node(right_child)
-
-    print_node(0)
 
 class Tree:
     def __init__(self):
@@ -69,7 +42,7 @@ class Tree:
         self.thresholds += [None, None]
         self.features += [None, None]
         self.gains += [0, 0]
-        self.depths += [self.depths[father]+1, self.depths[father]+1]
+        self.depths += [self.depths[father] + 1, self.depths[father] + 1]
         self.categorical_nodes += [False, False]
 
         self.target += [split.left_target, split.right_target]
@@ -313,14 +286,14 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
                 ## Update the leaf 2 node
 
                 ## At each split, we add 2 nodes. So we will always have 2*n_leaves-1 nodes (e.g. 2 leaves => 3 nodes, 4 leaves => 7 nodes)
-                leaf2node[best_split.leaf] = 2*n_leaves-1 # Index of the left child
-                leaf2node[n_leaves] = 2*n_leaves # Index of the right child
+                leaf2node[best_split.leaf] = 2 * n_leaves - 1  # Index of the left child
+                leaf2node[n_leaves] = 2 * n_leaves  # Index of the right child
 
                 # Pop out the old leaf
                 leaves_to_explore.remove(best_split.leaf)
 
                 ## Add the new leaves (suppose there is a condition before)
-                if parent_depth+1 < max_depth:
+                if parent_depth + 1 < max_depth:
                     if len(left_indices) >= self.min_samples_split:
                         leaves_to_explore.append(best_split.leaf)
                     if len(right_indices) >= self.min_samples_split:
@@ -336,7 +309,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
                     # Single star gain
                     n_clusters += 1
 
-        self.labels_ = (Y@Z).argmax(0)
+        self.labels_ = (Y @ Z).argmax(0)
         self.leaves_ = Z.argmax(0)
 
         return self
@@ -405,3 +378,48 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
         y_pred = self.predict(X)
         kernel = self._compute_kernel(X, y)
         return gemini_objective(y_pred, kernel)
+
+
+@constraint_params({
+    "kauri_tree": [Kauri],
+    "feature_names": ["array-like", None]
+})
+def print_kauri_tree(kauri_tree, feature_names=None):
+    """
+    Prints the binary tree structure of a trained KAURI tree.
+
+    Parameters
+    ----------
+    kauri_tree: Kauri
+        A Kauri instance that was trained
+
+    feature_names: array of shape (n_features,) or None
+        The name to use to describe the features. If set to None, a default print "X[:,i]" is proposed.
+    """
+    assert isinstance(kauri_tree, Kauri), f"The passed instance is not a KauriTree, got: {kauri_tree.__class__}"
+    check_is_fitted(kauri_tree)
+    if feature_names is not None:
+        used_features = [x for x in kauri_tree.tree_.features if x is not None]
+        assert len(feature_names) >= len(np.unique(used_features)), ("Fewer feature names than used "
+                                                                     "features by the tree were provided")
+
+    def print_node(node_id):
+        current_depth = kauri_tree.tree_.depths[node_id]
+        print("| " * current_depth, f"Node {node_id}", sep="")
+        left_child = kauri_tree.tree_.children_left[node_id]
+        right_child = kauri_tree.tree_.children_right[node_id]
+        if left_child == -1:
+            print("| " * current_depth, f"Cluster: {kauri_tree.tree_.target[node_id]}")
+            return
+        feature = kauri_tree.tree_.features[node_id]
+        threshold = kauri_tree.tree_.thresholds[node_id]
+        if feature_names is not None:
+            feature_name = feature_names[feature]
+        else:
+            feature_name = f"X[:, {feature}]"
+        print("| " * current_depth, "|=", f"{feature_name} <= {threshold}", sep="")
+        print_node(left_child)
+        print("| " * current_depth, "|=", f"{feature_name} > {threshold}", sep="")
+        print_node(right_child)
+
+    print_node(0)
