@@ -82,7 +82,8 @@ def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1
 
     Parameters
     ----------
-    gemini_model: a GemClus model that involves gemini maximisation with gradient descent.
+    gemini_model: MLP___, Linear___ or Categorical___
+        A GemClus model that involves gemini maximisation with gradient descent.
     must_link: ndarray of shape (n_constraints, 2) or None, default=None
         The constraints of samples being together must be described by a list of pairs of indices
         [(i1,j1),..., (iN, jN)].

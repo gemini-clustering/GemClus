@@ -70,6 +70,17 @@ for selecting a subset of features which may enhance interpretability of cluster
     sparse.SparseLinearMMD
     sparse.SparseMLPMMD
 
+Constraints
+===========
+
+This method aims at decorating the GEMINI models to give further guidance on the desired clustering.
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    add_mlcl_constraint
+
 Dataset generation
 ===================
 
