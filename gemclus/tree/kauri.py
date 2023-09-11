@@ -136,7 +136,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
     """
     _parameter_constraints: dict = {
         "max_clusters": [Interval(Integral, 1, None, closed="left")],
-        "max_depth": [Interval(Integral, 2, None, closed="left"), None],
+        "max_depth": [Interval(Integral, 1, None, closed="left"), None],
         "min_samples_split": [Interval(Integral, 2, None, closed="left")],
         "min_samples_leaf": [Interval(Integral, 1, None, closed="left")],
         "max_features": [Interval(Integral, 1, None, closed="left"), None],
@@ -292,7 +292,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
                 # Pop out the old leaf
                 leaves_to_explore.remove(best_split.leaf)
 
-                ## Add the new leaves (suppose there is a condition before)
+                ## Add the new leaves to explore if they respect structural constraints
                 if parent_depth + 1 < max_depth:
                     if len(left_indices) >= self.min_samples_split:
                         leaves_to_explore.append(best_split.leaf)
