@@ -11,7 +11,7 @@ to clusters. The thresholds are learnt by GEMINI maximisation.
 from sklearn import datasets, metrics
 
 from gemclus.gemini import MMDOvA
-from gemclus.tree import Douglas, print_douglas_rules
+from gemclus.tree import Douglas
 
 ###########################################################################
 # Load the dataset
@@ -34,12 +34,3 @@ y_pred_linear = model.fit_predict(X)
 
 print("Score of model is: ", model.score(X))
 print("ARI of model is: ", metrics.adjusted_rand_score(y, y_pred_linear))
-
-###########################################################################
-# Visualise the douglas rules
-# --------------------------------------------------------------
-
-# %%visualise_structure
-
-print("Cluster rules of learnt DOUGLAS model")
-print_douglas_rules(model, feature_names=iris["feature_names"])
