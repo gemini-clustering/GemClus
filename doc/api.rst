@@ -89,9 +89,21 @@ inner rules.
 .. autosummary::
     :toctree: generated/
     :template: function.rst
-
+    
     tree.print_kauri_tree
-    tree.print_douglas_rules
+    
+    
+    
+Constraints
+===========
+
+This method aims at decorating the GEMINI models to give further guidance on the desired clustering.
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+    
+    add_mlcl_constraint
 
 Dataset generation
 ===================
