@@ -27,6 +27,7 @@ LICENSE = 'GPLv3'
 DOWNLOAD_URL = 'https://github.com/gemini-clustering'
 VERSION = __version__
 INSTALL_REQUIRES = ['numpy', 'scipy', 'scikit-learn', 'pot>=0.8.1']
+SETUP_REQUIRES = ["numpy", "cython>=0.23"]
 CLASSIFIERS = ['Intended Audience :: Science/Research',
                'Intended Audience :: Developers',
                'Intended Audience :: Education',
