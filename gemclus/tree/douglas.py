@@ -355,4 +355,38 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
 
         return gemini(y_pred, affinity)
 
+    def find_active_points(self, X):
+        """
+        Calculates the list of cut points that are considered as active for a Douglas tree and some data X. A cut point
+        is active if its value falls within the bounds of its matching feature.
 
+        Active points can be used for finding features that actively contributed to the clustering.
+
+        Parameters
+        ----------
+        X: {array-like, sparse matrix} of shape (n_samples, n_features)
+            Test samples.
+
+        Returns
+        -------
+        active_points: List
+            A list containing the integer indices of features for which the Douglas model has active cut points
+        """
+
+        check_is_fitted(self)
+        X = check_array(X)
+
+        assert X.shape[1] >= len(self.cut_points_list_), ("The passed data has fewer features than the number of"
+                                                                   "cut points expected for the Douglas model")
+        active_points = []
+
+        for (feature_index, cut_points) in self.cut_points_list_:
+            feature = X[:, feature_index]
+            min_threshold = cut_points.min()
+            max_threshold = cut_points.max()
+
+            # Check of the cut point lists having at least one threshold falling within bounds of the feature
+            if not (np.all(feature <= min_threshold) or np.all(feature >= max_threshold)):
+                active_points += [feature_index]
+
+        return active_points

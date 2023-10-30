@@ -9,7 +9,7 @@ from gemclus.gemini import MMDOvA, MMDOvO, WassersteinOvA, WassersteinOvO
 
 from sklearn import metrics
 
-from gemclus.tree import Kauri, Douglas, print_kauri_tree, print_douglas_rules
+from gemclus.tree import Kauri, Douglas, print_kauri_tree
 
 
 @pytest.mark.parametrize(
@@ -99,6 +99,7 @@ def test_geminis_douglas(gemini):
     y_pred = clf.fit_predict(X)
 
     print(metrics.adjusted_rand_score(y_pred, y))
+    print(clf.find_active_points(X))
 
 
 def test_batches_douglas():
@@ -124,22 +125,3 @@ def test_kauri_printing():
     feature_names = list(range(X.shape[1]))
     print_kauri_tree(model, feature_names)
     print_kauri_tree(model, np.array(feature_names))
-
-
-@pytest.mark.parametrize(
-    "n_cuts",
-    [1, 2]
-)
-def test_douglas_printing(n_cuts):
-    gemini = MMDOvA()
-    model = Douglas(gemini=gemini, max_iter=5, n_cuts=n_cuts, random_state=0, verbose=True)
-
-    with pytest.raises(sklearn.exceptions.NotFittedError) as excinfo:
-        print_douglas_rules(model)
-
-    X, y = gemclus.data.celeux_one(n=5, p=1, random_state=0)
-    model.fit(X)
-
-    feature_names = list(range(X.shape[1]))
-
-    print_douglas_rules(model, feature_names)
