@@ -29,7 +29,7 @@ X, y = datasets.make_blobs(centers=3, cluster_std=0.5, n_samples=200, random_sta
 
 # Add extra noisy variables
 np.random.seed(0)
-X = np.concatenate([X, np.random.normal(scale=0.5, size=(200, 48))], axis=1)
+X = np.concatenate([X, np.random.normal(scale=0.5, size=(200, 18))], axis=1)
 
 ###########################################################################
 # Train the model
@@ -39,7 +39,7 @@ X = np.concatenate([X, np.random.normal(scale=0.5, size=(200, 48))], axis=1)
 
 # %%training
 
-clf = SparseMLPMMD(random_state=0, alpha=1)
+clf = SparseMLPMMD(random_state=0, alpha=1, batch_size=50, max_iter=25, learning_rate=0.001)
 
 # Perform a path search to eliminate all features
 best_weights, geminis, penalties, alphas, n_features = clf.path(X)
@@ -78,7 +78,7 @@ plt.ylabel("Total score")
 plt.tight_layout()
 plt.show()
 
-print(f"Selected features: {np.where(np.linalg.norm(best_weights[0], axis=1, ord=2) != 0)}")
+print(f"Selected features: {clf.get_selection()}")
 print(f"The model score is {clf.score(X)}")
 print(f"Top gemini score was {max(geminis)}, which settles an optimum of {0.9 * max(geminis)}")
 

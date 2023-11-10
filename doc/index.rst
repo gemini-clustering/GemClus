@@ -3,7 +3,7 @@ Welcome to GemClus documentation!
 
 Welcome and thank you for checking GEMINI out, this really pleasures us.
 
-GEMINI is clustering-dedicated function derived from information theory that allows to do clustering without hypotheses
+GEMINI is a clustering-dedicated function derived from information theory that allows to do clustering without hypotheses
 on the data distributions. We try to provide overall some implementations of small-scale discriminative clustering
 methods in this package.
 

@@ -10,6 +10,8 @@ You can find the complete documentation of the package here: [https://gemini-clu
 
 The documentation for the latest updates is at: [https://gemini-clustering.github.io/main](https://gemini-clustering.github.io/main/)
 
+The official source code can be found here: [https://github.com/gemini-clustering/GemClus](https://github.com/gemini-clustering/GemClus)
+
 ## Installation
 
 ### Official package

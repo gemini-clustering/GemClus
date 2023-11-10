@@ -68,7 +68,7 @@ plt.show()
 
 # %%training
 
-clf = SparseLinearMMD(groups=groups, random_state=0, alpha=1)
+clf = SparseLinearMMD(groups=groups, random_state=0, alpha=1, max_iter=100, batch_size=50, learning_rate=1e-2)
 
 # Perform a path search to eliminate all features, we lower the threshold to 80% of the max GEMINI in feature selection
 best_weights, geminis, penalties, alphas, n_features = clf.path(X, keep_threshold=0.8)
@@ -81,6 +81,6 @@ best_weights, geminis, penalties, alphas, n_features = clf.path(X, keep_threshol
 
 # %%path
 
-print(f"Selected features: {np.where(np.linalg.norm(best_weights[0], axis=1, ord=2) != 0)}")
+print(f"Selected features: {clf.get_selection()}")
 print(f"The model score is {clf.score(X)}")
-print(f"Top gemini score was {max(geminis)}, which settles an optimum of {0.9 * max(geminis)}")
+print(f"Top gemini score was {max(geminis)}, which settles an optimum of {0.8 * max(geminis)}")
