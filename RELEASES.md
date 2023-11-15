@@ -1,5 +1,13 @@
 # History of changes
 
+## 0.2.0
+
++ Adding a new sparse logistic regression model trained with mutual information instead of MMD GEMINI: `gemclus.sparse.SparseLinearMI`
++ Adding new package containing methods for unsupervised tree clustering with end-to-end training: `gemclus.tree`. The package features a CART-like algorithm for clustering named `Kauri` and a differentiable tree named `Douglas`
++ *Experimental*: A method for adding constraints of type must-link cannot-link to discriminative models: `gemclus.add_mlcl_constraint`
++ Minor fixes in documentation
++ Better compatibility with scikit learn 1.3.0 regarding parameter constraint check
+
 ## 0.1.1
 
 + Fixing the ABCMeta parameter validation problem for the `draw_gmm` method for retrocompatibility with Python 3.8.
