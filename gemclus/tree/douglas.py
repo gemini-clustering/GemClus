@@ -69,7 +69,8 @@ class Douglas(ClusterMixin, BaseEstimator, ABC):
 
     References
     -----------
-    FIXME: to be announced
+    DOUGLAS - End-to-end training of unsupervised trees
+        Louis Ohl, Pierre-Alexandre Mattei, Mickaël Leclercq, Arnaud Droit, Frederic Preciosio
     """
     _parameter_constraints: dict = {
         "n_clusters": [Interval(Integral, 1, None, closed="left")],

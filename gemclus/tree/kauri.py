@@ -132,7 +132,8 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
 
     References
     ----------
-    FIXME: to be announced
+    KAURI - End-to-end training of unsupervised trees
+        Louis Ohl, Pierre-Alexandre Mattei, Mickaël Leclercq, Arnaud Droit, Frederic Preciosio
     """
     _parameter_constraints: dict = {
         "max_clusters": [Interval(Integral, 1, None, closed="left")],
