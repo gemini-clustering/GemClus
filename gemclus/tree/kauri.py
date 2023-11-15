@@ -198,7 +198,9 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
         random_state = check_random_state(self.random_state)
 
         # Check that all variables follow some logical constraints
-        assert self.min_samples_leaf * 2 <= self.min_samples_split, f"Contradiction between the number of samples required to consider a split and the number of samples needed to create a leaf"
+        assert self.min_samples_leaf * 2 <= self.min_samples_split, (f"Contradiction between the number of samples "
+                                                                     f"required to consider a split and the number of"
+                                                                     f" samples needed to create a leaf")
 
         if self.verbose:
             print("Initialising variables")
@@ -274,26 +276,27 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
                 Z[n_leaves, right_indices] = 1
 
                 # Then Y
-                ## Find the custer of leaf
+                # Find the custer of leaf
                 k = Y[:, best_split.leaf].argmax()
                 Y[k, best_split.leaf] = 0  # Leaf does not belong any longer in this cluster
                 Y[best_split.left_target, best_split.leaf] = 1  # It belongs to the target of left
                 Y[best_split.right_target, n_leaves] = 1
 
-                ## Update the tree using the split
+                # Update the tree using the split
                 self.tree_._add_child(leaf2node[best_split.leaf], best_split)
                 parent_depth = self.tree_.get_depth(leaf2node[best_split.leaf])
 
-                ## Update the leaf 2 node
+                # Update the leaf 2 node
 
-                ## At each split, we add 2 nodes. So we will always have 2*n_leaves-1 nodes (e.g. 2 leaves => 3 nodes, 4 leaves => 7 nodes)
+                # # At each split, we add 2 nodes. So we will always have 2*n_leaves-1 nodes (e.g. 2 leaves => 3
+                # nodes, 4 leaves => 7 nodes)
                 leaf2node[best_split.leaf] = 2 * n_leaves - 1  # Index of the left child
                 leaf2node[n_leaves] = 2 * n_leaves  # Index of the right child
 
                 # Pop out the old leaf
                 leaves_to_explore.remove(best_split.leaf)
 
-                ## Add the new leaves to explore if they respect structural constraints
+                # Add the new leaves to explore if they respect structural constraints
                 if parent_depth + 1 < max_depth:
                     if len(left_indices) >= self.min_samples_split:
                         leaves_to_explore.append(best_split.leaf)
@@ -304,7 +307,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
                 n_leaves += 1
                 # Increment the number of clusters if it did happen
                 if best_split.left_target >= n_clusters and best_split.right_target >= n_clusters:
-                    ## Double star gain
+                    # Double star gain
                     n_clusters += 2
                 elif best_split.left_target >= n_clusters or best_split.right_target >= n_clusters:
                     # Single star gain
