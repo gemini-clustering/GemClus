@@ -47,7 +47,7 @@ class _LinearGEMINI(_BaseGEMINI, ABC):
         return [self.W_, self.b_]
 
     def _infer(self, X, retain=True):
-        H = np.maximum((X @ self.W_ + self.b_), 0)
+        H = X @ self.W_ + self.b_
         return softmax(H)
 
 
