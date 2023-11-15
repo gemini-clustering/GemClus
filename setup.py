@@ -77,4 +77,5 @@ setup(name=DISTNAME,
             include_dirs=[np.get_include(), os.path.join(ROOT, "gemclus/tree")]
         )),
       install_requires=INSTALL_REQUIRES,
-      extras_require=EXTRAS_REQUIRE)
+      extras_require=EXTRAS_REQUIRE,
+      setup_requires=SETUP_REQUIRES)
