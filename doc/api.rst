@@ -67,6 +67,7 @@ for selecting a subset of features which may enhance interpretability of cluster
    :toctree: generated/
    :template: class.rst
 
+    sparse.SparseLinearMI
     sparse.SparseLinearMMD
     sparse.SparseMLPMMD
 
