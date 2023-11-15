@@ -38,7 +38,8 @@ adds a linear skip connection between the inputs and clustering output. Note tha
 logistic regression model with group-lasso penalty to induce sparsity with :class:`gemclus.sparse.SparseLinearMMD`.
 
 If you want to use another model, you can derive one of the :class:`gemclus._BaseMMD` or :class:`gemclus._BaseWasserstein`
-classes and rewrite their hidden method :code:`_infer`, :code:`_get_weights` and :code:`_init_params`.
+classes and rewrite their hidden method :code:`_infer`, :code:`_get_weights` and :code:`_init_params`. An example
+of extension is given `Here <auto_examples/plot_custom_model.html>`_
 
 Basic examples
 ===============
