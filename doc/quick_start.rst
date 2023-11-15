@@ -12,16 +12,18 @@ What is GEMINI
 ================
 
 GEMINI stands for `Generalised Mutual Information`, a novel type of information theory score that can be used as an
-objective to maximise to perform clustering. GEMINI consists in measuring the expectation of a distance :math:`$D$`
-between custer distributions. For a set of clustering distributions :math:`$p_\theta(x|y)$`, GEMINI has two definitions.
+objective to maximise to perform clustering. GEMINI consists in measuring the expectation of a distance :math:`D`
+between custer distributions. For a set of clustering distributions :math:`p_\theta(x|y)`, GEMINI has two definitions.
 The first one is the one-vs-all (OvA) which compares the cluster distribution to the data distribution:
 
 .. math::
+
     \mathbb{E}_{y \sim p_\theta(y)} \left[ D(p_\theta(x|y) \| p(x))\right],
 
 and the one-vs-one (OvO) version which compares two independently drawn cluster distributions:
 
 .. math::
+
     \mathbb{E}_{y_1, y_2 \sim p_\theta(y)} \left[ D(p_\theta(x|y_1) \| p_\theta(x | y_2))\right].
 
 The specificity of GEMINI is that it involves distances in which the Bayes Theorem can easily be performed to get

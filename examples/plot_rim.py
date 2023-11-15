@@ -4,7 +4,7 @@ Simple logistic regression with RIM
 =================================================================
 
 RIM (regularised mutual information) is a proposal of model by Krause et al. (2010) which consists in
-maximising for a linear model under :math:`\ell_2` penalty. In this example, we show how to do clustering of a
+maximising for a linear model under :math:`\\ell_2` penalty. In this example, we show how to do clustering of a
 Gaussian mixture using RIM.
 """
 
