@@ -87,12 +87,12 @@ class SparseMLPMMD(_SparseMLPGEMINI, _BaseMMD):
     ----------
     GEMINI - Generalised Mutual Information for Discriminative Clustering
         Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Warith Harchaoui, Mickaël Leclercq,
-        Arnaud Droit, Frederic Preciosio
+        Arnaud Droit, Frederic Precioso
     LassoNet architecture - LassoNet: A Neural Network with Feature Sparsity.
         Lemhadri, I., Ruan, F., Abraham, L., & Tibshirani, R.
     Sparse GEMINI - Sparse GEMINI for joint discriminative clustering and feature selection
         Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Mickaël Leclercq,
-        Arnaud Droit, Frederic Preciosio
+        Arnaud Droit, Frederic Precioso
 
 
     See Also

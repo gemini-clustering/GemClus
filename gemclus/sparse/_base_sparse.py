@@ -99,18 +99,24 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
         patience = 0
         i = 0
         while i < clf.max_iter and patience < max_patience:
-            all_indices = generator.permutation(len(X))
-            j = 0
-            while j < len(X):
-                batch_indices = all_indices[j:j + batch_size]
-                X_batch = X[batch_indices]
-                kernel_batch = affinity[batch_indices][:, batch_indices]
+            for X_batch, affinity_batch in clf._batchify(X, affinity, generator):
                 y_pred = clf._infer(X_batch)
-                _, grads = gemini_objective(y_pred, kernel_batch, return_grad=True)
+                _, grads = gemini_objective(y_pred, affinity_batch, return_grad=True)
                 grads = clf._compute_grads(X_batch, y_pred, grads)
                 clf._update_weights(weights, grads)
 
-                j += batch_size
+            # all_indices = generator.permutation(len(X))
+            # j = 0
+            # while j < len(X):
+            #     batch_indices = all_indices[j:j + batch_size]
+            #     X_batch = X[batch_indices]
+            #     kernel_batch = affinity[batch_indices][:, batch_indices]
+            #     y_pred = clf._infer(X_batch)
+            #     _, grads = gemini_objective(y_pred, kernel_batch, return_grad=True)
+            #     grads = clf._compute_grads(X_batch, y_pred, grads)
+            #     clf._update_weights(weights, grads)
+            #
+            #     j += batch_size
 
             # Epoch control
             iteration_gemini_score, iteration_l1 = compute_val_score(clf, X, batch_size)
