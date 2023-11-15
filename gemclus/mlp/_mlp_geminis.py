@@ -129,7 +129,7 @@ class MLPMMD(_MLPGEMINI, _BaseMMD):
     ----------
     GEMINI - Generalised Mutual Information for Discriminative Clustering
         Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Warith Harchaoui, Mickaël Leclercq,
-        Arnaud Droit, Frederic Preciosio
+        Arnaud Droit, Frederic Precioso
 
     See Also
     --------
@@ -247,7 +247,7 @@ class MLPWasserstein(_MLPGEMINI, _BaseWasserstein):
     ----------
     GEMINI - Generalised Mutual Information for Discriminative Clustering
         Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Warith Harchaoui, Mickaël Leclercq,
-        Arnaud Droit, Frederic Preciosio
+        Arnaud Droit, Frederic Precioso
 
     See Also
     --------
