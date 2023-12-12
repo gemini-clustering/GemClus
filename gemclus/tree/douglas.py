@@ -3,14 +3,14 @@ from numbers import Integral, Real
 
 import numpy as np
 
-from .._base_gemini import _DiscriminativeModel
+from .._base_gemini import DiscriminativeModel
 from sklearn.utils import check_array
 from sklearn.utils._param_validation import Interval
 from sklearn.utils.extmath import softmax
 from sklearn.utils.validation import check_is_fitted
 
 
-class Douglas(_DiscriminativeModel):
+class Douglas(DiscriminativeModel):
     """
     Implementation of the `DNDTs optimised using GEMINI leveraging apprised splits` tree algorithm. This model learns
     clusters by optimising learnable parameters to perform feature-wise soft-binnings and recombine those bins
@@ -79,7 +79,7 @@ class Douglas(_DiscriminativeModel):
     """
 
     _parameter_constraints: dict = {
-        **_DiscriminativeModel._parameter_constraints,
+        **DiscriminativeModel._parameter_constraints,
         "n_cuts": [Interval(Integral, 1, None, closed="left"), None],
         "feature_mask": [np.ndarray, None],
         "temperature": [Interval(Real, 0, None, closed="neither")],

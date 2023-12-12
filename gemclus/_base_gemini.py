@@ -16,7 +16,7 @@ from gemclus.gemini import AVAILABLE_GEMINIS
 from .gemini._gemini_losses import _GEMINI, _str_to_gemini
 
 
-class _DiscriminativeModel(ClusterMixin, BaseEstimator, ABC):
+class DiscriminativeModel(ClusterMixin, BaseEstimator, ABC):
     """ This is the BaseGEMINI to derive to create a GEMINI MLP or linear clustering model.
      When deriving this class, there are a couple methods to override depending on the design of a discriminative model
      :math:`p(y|x)` or a specific GEMINI.

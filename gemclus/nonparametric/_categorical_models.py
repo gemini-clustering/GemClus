@@ -2,11 +2,11 @@ from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRWISE_DISTANC
 from sklearn.utils._param_validation import StrOptions
 from sklearn.utils.extmath import softmax
 
-from .._base_gemini import _DiscriminativeModel
+from .._base_gemini import DiscriminativeModel
 from ..gemini import MMDGEMINI, WassersteinGEMINI
 
 
-class CategoricalModel(_DiscriminativeModel):
+class CategoricalModel(DiscriminativeModel):
     """ The CategoricalModel is a nonparametric model where each sample is directly assign a probability vector of
     as conditional clustering distribution. Consequently, the parameters do not depend on the value of :math:`$x$`.
 
@@ -80,7 +80,7 @@ class CategoricalModel(_DiscriminativeModel):
     0.6577369504469952
     """
     _parameter_constraints: dict = {
-        **_DiscriminativeModel._parameter_constraints,
+        **DiscriminativeModel._parameter_constraints,
     }
 
     def __init__(self, n_clusters=3, gemini="mmd_ova", max_iter=1000, learning_rate=1e-3, solver="adam",

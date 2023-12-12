@@ -5,7 +5,7 @@ import numpy as np
 from scipy.sparse import csgraph
 from sklearn.utils import check_array
 
-from ._base_gemini import _DiscriminativeModel
+from ._base_gemini import DiscriminativeModel
 from ._constraints import constraint_params
 
 
@@ -103,7 +103,7 @@ def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1
     The model gemini model with decorated gradient functions to satisfy must-link / cannot-link constraints.
     """
 
-    assert issubclass(gemini_model.__class__, _DiscriminativeModel)
+    assert issubclass(gemini_model.__class__, DiscriminativeModel)
     assert issubclass(type(float), float) or isinstance(factor, float)
     assert factor > 0
 

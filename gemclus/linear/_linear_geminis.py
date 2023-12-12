@@ -7,11 +7,11 @@ from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOpti
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import softmax
 
-from .._base_gemini import _DiscriminativeModel
+from .._base_gemini import DiscriminativeModel
 from ..gemini import MMDGEMINI, WassersteinGEMINI
 
 
-class LinearModel(_DiscriminativeModel, ABC):
+class LinearModel(DiscriminativeModel, ABC):
     """ Implementation of a logistic regression as a clustering distribution :math:`p(y|x)`. Any GEMINI can be
     used to train this model.
 
@@ -87,7 +87,7 @@ class LinearModel(_DiscriminativeModel, ABC):
     1.7550724287639448
     """
     _parameter_constraints: dict = {
-        **_DiscriminativeModel._parameter_constraints,
+        **DiscriminativeModel._parameter_constraints,
     }
 
     def __init__(self, n_clusters=3, gemini="mmd_ova", max_iter=1000, learning_rate=1e-3, solver="adam",

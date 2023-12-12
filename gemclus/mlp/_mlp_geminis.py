@@ -6,11 +6,11 @@ from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOpti
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import softmax
 
-from .._base_gemini import _DiscriminativeModel
+from .._base_gemini import DiscriminativeModel
 from ..gemini import MMDGEMINI, WassersteinGEMINI
 
 
-class MLPModel(_DiscriminativeModel):
+class MLPModel(DiscriminativeModel):
     """ Implementation of a two-layer neural network as a clustering distribution :math:`p(y|x)`. Any GEMINI can be used
     to train this model.
 
@@ -94,7 +94,7 @@ class MLPModel(_DiscriminativeModel):
     0.6325592616409484
     """
     _parameter_constraints: dict = {
-        **_DiscriminativeModel._parameter_constraints,
+        **DiscriminativeModel._parameter_constraints,
         "hidden_dim": [Interval(Integral, 1, None, closed="left")],
     }
 
