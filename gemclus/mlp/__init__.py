@@ -1,3 +1,3 @@
-from ._mlp_geminis import MLPMMD, MLPWasserstein
+from ._mlp_geminis import MLPModel, MLPMMD, MLPWasserstein
 
-__all__ = ["MLPMMD", "MLPWasserstein"]
+__all__ = ["MLPModel", "MLPMMD", "MLPWasserstein"]

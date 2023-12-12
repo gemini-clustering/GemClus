@@ -1,3 +1,3 @@
-from ._categorical_models import CategoricalMMD, CategoricalWasserstein
+from ._categorical_models import CategoricalModel, CategoricalMMD, CategoricalWasserstein
 
-__all__ = ['CategoricalMMD', 'CategoricalWasserstein']
+__all__ = ["CategoricalModel", 'CategoricalMMD', 'CategoricalWasserstein']

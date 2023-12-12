@@ -1,3 +1,3 @@
-from ._linear_geminis import LinearMMD, LinearWasserstein, RIM
+from ._linear_geminis import LinearModel, LinearMMD, LinearWasserstein, RIM
 
-__all__ = ["LinearMMD", "LinearWasserstein", "RIM"]
+__all__ = ["LinearModel", "LinearMMD", "LinearWasserstein", "RIM"]

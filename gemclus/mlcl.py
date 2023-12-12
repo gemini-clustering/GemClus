@@ -5,7 +5,7 @@ import numpy as np
 from scipy.sparse import csgraph
 from sklearn.utils import check_array
 
-from ._base_gemini import _BaseGEMINI
+from ._base_gemini import _DiscriminativeModel
 from ._constraints import constraint_params
 
 
@@ -84,6 +84,7 @@ def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1
     ----------
     gemini_model: MLP___, Linear___ or Categorical___
         A GemClus model that involves gemini maximisation with gradient descent.
+
     must_link: ndarray of shape (n_constraints, 2) or None, default=None
         The constraints of samples being together must be described by a list of pairs of indices
         [(i1,j1),..., (iN, jN)].
@@ -99,11 +100,10 @@ def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1
 
     Returns
     -------
-
     The model gemini model with decorated gradient functions to satisfy must-link / cannot-link constraints.
     """
 
-    assert issubclass(gemini_model.__class__, _BaseGEMINI)
+    assert issubclass(gemini_model.__class__, _DiscriminativeModel)
     assert issubclass(type(float), float) or isinstance(factor, float)
     assert factor > 0
 

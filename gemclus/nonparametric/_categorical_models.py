@@ -1,20 +1,93 @@
-from abc import ABC
-
+from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRWISE_DISTANCE_FUNCTIONS
+from sklearn.utils._param_validation import StrOptions
 from sklearn.utils.extmath import softmax
 
-from gemclus._base_gemini import _BaseGEMINI, _BaseMMD, _BaseWasserstein
+from .._base_gemini import _DiscriminativeModel
+from ..gemini import MMDGEMINI, WassersteinGEMINI
 
 
-class _CategoricalGEMINI(_BaseGEMINI, ABC):
+class CategoricalModel(_DiscriminativeModel):
+    """ The CategoricalModel is a nonparametric model where each sample is directly assign a probability vector of
+    as conditional clustering distribution. Consequently, the parameters do not depend on the value of :math:`$x$`.
+
+    .. math::
+        p(y=k|x_i) = \\theta_{ki}
+
+    Contrarily to other models, the categorical distribution can not be used for clustering samples that were not
+    part of the training set and does not support batching as well.
+
+    The model optimises the parameters to maximise any GEMINI.
+
+    Parameters
+    ----------
+    n_clusters : int, default=3
+        The maximum number of clusters to form as well as the number of output neurons in the neural network.
+
+    gemini: str, GEMINI instance or None, default="mmd_ova"
+        GEMINI objective used to train this discriminative model. Can be "mmd_ova", "mmd_ovo", "wasserstein_ova",
+        "wasserstein_ovo", "mi" or other GEMINI available in `gemclus.gemini.AVAILABLE_GEMINI`. Default GEMINIs
+        involve the Euclidean metric or linear kernel. To incorporate custom metrics, a GEMINI can also
+        be passed as an instance. If set to None, the GEMINI will be MMD OvA with linear kernel.
+
+    max_iter: int, default=1000
+        Maximum number of epochs to perform gradient descent in a single run.
+
+    learning_rate: float, default=1e-3
+        Initial learning rate used. It controls the step-size in updating the weights.
+
+    solver: {'sgd','adam'}, default='adam'
+        The solver for weight optimisation.
+
+        - 'sgd' refers to stochastic gradient descent.
+        - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
+
+    verbose: bool, default=False
+        Whether to print progress messages to stdout
+
+    random_state: int, RandomState instance, default=None
+        Determines random number generation for weights and bias initialisation.
+        Pass an int for reproducible results across multiple function calls.
+
+    Attributes
+    ----------
+    optimiser_: `AdamOptimizer` or `SGDOptimizer`
+        The optimisation algorithm used for training depending on the chosen solver parameter.
+    labels_: ndarray of shape (n_samples)
+        The labels that were assigned to the samples passed to the :meth:`fit` method.
+    n_iter_: int
+        The number of iterations that the model took for converging.
+    logits_: ndarray of shape (n_samples, n_clusters)
+        The logit of the cluster membership of each sample.
+
+    References
+    ----------
+    GEMINI - Generalised Mutual Information for Discriminative Clustering
+        Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Warith Harchaoui, Mickaël Leclercq,
+        Arnaud Droit, Frederic Precioso
+
+    See Also
+    --------
+    CategoricalMMD: nonparametric model tailored for the MMD GEMINI
+    CategoricalWasserstein: nonparametric model tailored for the Wasserstein GEMINI
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_iris
+    >>> from gemclus.nonparametric import CategoricalModel
+    >>> X,y=load_iris(return_X_y=True)
+    >>> clf = CategoricalModel(gemini="mi",random_state=0).fit(X)
+    >>> clf.score(X)
+    0.6577369504469952
+    """
     _parameter_constraints: dict = {
-        **_BaseGEMINI._parameter_constraints,
+        **_DiscriminativeModel._parameter_constraints,
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam",
+    def __init__(self, n_clusters=3, gemini="mmd_ova", max_iter=1000, learning_rate=1e-3, solver="adam",
                  verbose=False, random_state=None):
-        _BaseGEMINI.__init__(
-            self,
+        super().__init__(
             n_clusters=n_clusters,
+            gemini=gemini,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
@@ -36,37 +109,11 @@ class _CategoricalGEMINI(_BaseGEMINI, ABC):
     def _infer(self, X, retain=True):
         return softmax(self.logits_)
 
-
-
     def _batchify(self, X, affinity_matrix=None, random_state=None):
-        """
-        Yields elements of X and its corresponding affinity matrix in batches with a uniform random sampling.
-
-        Parameters
-        ----------
-        X: ndarray of shape (n_samples, n_features)
-            Training instances to cluster
-
-        affinity_matrix: ndarray of shape (n_samples, n_samples) or None
-            The affinity computed between all elements of `X`. Setting to None means the GEMINI doe snot need any
-            affinity.
-
-        random_state: int, RandomState instance, default=None
-            Unused, here for legacy.
-
-        Returns
-        -------
-        X_batch: ndarray of shape (n_batch, n_features)
-            The batch of data elements
-
-        affinity_batch: ndarray of shape (n_batch, n_batch) or None
-            The affinity values of the corresponding elements of the data batch. If the parameter `affinity_matrix` was
-            None, then None is returned.
-        """
         yield X, affinity_matrix
 
 
-class CategoricalMMD(_CategoricalGEMINI, _BaseMMD):
+class CategoricalMMD(CategoricalModel):
     """ The CategoricalMMD is a nonparametric model where each sample is directly assign a probability vector of
     as conditional clustering distribution. Consequently, the parameters do not depend on the value of :math:`$x$`.
 
@@ -112,6 +159,9 @@ class CategoricalMMD(_CategoricalGEMINI, _BaseMMD):
         Determines random number generation for weights and bias initialisation.
         Pass an int for reproducible results across multiple function calls.
 
+    kernel_params: dict, default=None
+        A dictionary of keyword arguments to pass to the chosen kernel function.
+
     Attributes
     ----------
     optimiser_: `AdamOptimizer` or `SGDOptimizer`
@@ -120,28 +170,56 @@ class CategoricalMMD(_CategoricalGEMINI, _BaseMMD):
         The labels that were assigned to the samples passed to the :meth:`fit` method.
     n_iter_: int
         The number of iterations that the model took for converging.
+    logits_: ndarray of shape (n_samples, n_clusters)
+        The logit of the cluster membership of each sample.
+
+    References
+    ----------
+    GEMINI - Generalised Mutual Information for Discriminative Clustering
+        Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Warith Harchaoui, Mickaël Leclercq,
+        Arnaud Droit, Frederic Precioso
+
+    See Also
+    --------
+    CategoricalModel: nonparametric model tailored for any generic GEMINI
+    CategoricalWasserstein: nonparametric model tailored for the Wasserstein GEMINI
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_iris
+    >>> from gemclus.nonparametric import CategoricalMMD
+    >>> X,y=load_iris(return_X_y=True)
+    >>> clf = CategoricalMMD(random_state=0).fit(X)
+    >>> clf.score(X)
+    1.211726751861832
     """
     _parameter_constraints: dict = {
-        **_CategoricalGEMINI._parameter_constraints,
-        **_BaseMMD._parameter_constraints,
+        **CategoricalModel._parameter_constraints,
+        "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS) + ["precomputed"])), callable],
+        "kernel_params": [dict, None],
+        "ovo": [bool]
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, kernel="linear", solver="adam", ovo=False,
-                 verbose=False, random_state=None):
-        _BaseMMD.__init__(
-            self,
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", kernel="linear", ovo=False,
+                 verbose=False, random_state=None, kernel_params=None):
+        super().__init__(
             n_clusters=n_clusters,
+            gemini=None,
             max_iter=max_iter,
             learning_rate=learning_rate,
-            ovo=ovo,
             solver=solver,
             verbose=verbose,
-            random_state=random_state,
-            kernel=kernel
+            random_state=random_state
         )
+        self.ovo = ovo
+        self.kernel = kernel
+        self.kernel_params = kernel_params
+
+    def get_gemini(self):
+        return MMDGEMINI(ovo=self.ovo, kernel=self.kernel, kernel_params=self.kernel_params)
 
 
-class CategoricalWasserstein(_CategoricalGEMINI, _BaseWasserstein):
+class CategoricalWasserstein(CategoricalModel):
     """ The CategoricalWasserstein is a nonparametric model where each sample is directly assign a probability vector of
     as conditional clustering distribution. Consequently, the parameters do not depend on the value of :math:`$x$`.
 
@@ -187,6 +265,9 @@ class CategoricalWasserstein(_CategoricalGEMINI, _BaseWasserstein):
         Determines random number generation for weights and bias initialisation.
         Pass an int for reproducible results across multiple function calls.
 
+    metric_params: dict, default=None
+        A dictionary of keyword arguments to pass to the chosen metric function.
+
     Attributes
     ----------
     optimiser_: `AdamOptimizer` or `SGDOptimizer`
@@ -195,22 +276,50 @@ class CategoricalWasserstein(_CategoricalGEMINI, _BaseWasserstein):
         The labels that were assigned to the samples passed to the :meth:`fit` method.
     n_iter_: int
         The number of iterations that the model took for converging.
+    logits_: ndarray of shape (n_samples, n_clusters)
+        The logit of the cluster membership of each sample.
+
+    References
+    ----------
+    GEMINI - Generalised Mutual Information for Discriminative Clustering
+        Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Warith Harchaoui, Mickaël Leclercq,
+        Arnaud Droit, Frederic Precioso
+
+    See Also
+    --------
+    CategoricalModel: nonparametric model tailored for any generic GEMINI
+    CategoricalMMD: nonparametric model tailored for the MMD GEMINI
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_iris
+    >>> from gemclus.nonparametric import CategoricalWasserstein
+    >>> X,y=load_iris(return_X_y=True)
+    >>> clf = CategoricalWasserstein(random_state=0).fit(X)
+    >>> clf.score(X)
+    1.3555482569532074
     """
     _parameter_constraints: dict = {
-        **_CategoricalGEMINI._parameter_constraints,
-        **_BaseWasserstein._parameter_constraints,
+        **CategoricalModel._parameter_constraints,
+        "metric": [StrOptions(set(list(PAIRWISE_DISTANCE_FUNCTIONS) + ["precomputed"])), callable],
+        "metric_params": [dict, None],
+        "ovo": [bool],
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, metric="euclidean", ovo=False,
-                 solver="adam", verbose=False, random_state=None):
-        _BaseWasserstein.__init__(
-            self,
+                 solver="adam", verbose=False, random_state=None, metric_params=None):
+        super().__init__(
             n_clusters=n_clusters,
+            gemini=None,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
-            ovo=ovo,
             verbose=verbose,
             random_state=random_state,
-            metric=metric
         )
+        self.ovo = ovo
+        self.metric = metric
+        self.metric_params = metric_params
+
+    def get_gemini(self):
+        return WassersteinGEMINI(ovo=self.ovo, metric=self.metric, metric_params=self.metric_params)

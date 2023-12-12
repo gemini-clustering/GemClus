@@ -2,23 +2,99 @@ from abc import ABC
 from numbers import Real
 
 import numpy as np
+from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRWISE_DISTANCE_FUNCTIONS
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
-from sklearn.utils._param_validation import Interval
+from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import softmax
 
-from .._base_gemini import _BaseGEMINI, _BaseMMD, _BaseWasserstein
-from ..gemini import MI
+from .._base_gemini import _DiscriminativeModel
+from ..gemini import MMDGEMINI, WassersteinGEMINI
 
 
-class _LinearGEMINI(_BaseGEMINI, ABC):
+class LinearModel(_DiscriminativeModel, ABC):
+    """ Implementation of a logistic regression as a clustering distribution :math:`p(y|x)`. Any GEMINI can be
+    used to train this model.
+
+    Parameters
+    ----------
+    n_clusters : int, default=3
+        The maximum number of clusters to form as well as the number of output neurons in the neural network.
+
+    gemini: str, GEMINI instance or None, default="mmd_ova"
+        GEMINI objective used to train this discriminative model. Can be "mmd_ova", "mmd_ovo", "wasserstein_ova",
+        "wasserstein_ovo", "mi" or other GEMINI available in `gemclus.gemini.AVAILABLE_GEMINI`. Default GEMINIs
+        involve the Euclidean metric or linear kernel. To incorporate custom metrics, a GEMINI can also
+        be passed as an instance. If set to None, the GEMINI will be MMD OvA with linear kernel.
+
+    max_iter: int, default=1000
+        Maximum number of epochs to perform gradient descent in a single run.
+
+    learning_rate: float, default=1e-3
+        Initial learning rate used. It controls the step-size in updating the weights.
+
+    solver: {'sgd','adam'}, default='adam'
+        The solver for weight optimisation.
+
+        - 'sgd' refers to stochastic gradient descent.
+        - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
+
+    batch_size: int, default=None
+        The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
+    verbose: bool, default=False
+        Whether to print progress messages to stdout
+
+    random_state: int, RandomState instance, default=None
+        Determines random number generation for weights and bias initialisation.
+        Pass an int for reproducible results across multiple function calls.
+
+    Attributes
+    ----------
+    W_: ndarray of shape (n_features, n_clusters)
+        The linear weights of model
+    b_: ndarray of shape (1, n_clusters)
+        The biases of the model
+    optimiser_: `AdamOptimizer` or `SGDOptimizer`
+        The optimisation algorithm used for training depending on the chosen solver parameter.
+    labels_: ndarray of shape (n_samples)
+        The labels that were assigned to the samples passed to the :meth:`fit` method.
+    n_iter_: int
+        The number of iterations that the model took for converging.
+
+    References
+    ----------
+    GEMINI - Generalised Mutual Information for Discriminative Clustering
+        Louis Ohl, Pierre-Alexandre Mattei, Charles Bouveyron, Warith Harchaoui, Mickaël Leclercq,
+        Arnaud Droit, Frederic Precioso
+
+    See Also
+    --------
+    LinearWasserstein: logistic regression trained for clustering with the Wasserstein GEMINI
+    LinearMMD: logistic regression trained for clustering with the MMD GEMINI
+    RIM: logistic regression trained with a regularised mutual information
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_iris
+    >>> from gemclus.linear import LinearModel
+    >>> X,y=load_iris(return_X_y=True)
+    >>> clf = LinearModel(gemini="mmd_ovo", random_state=0).fit(X)
+    >>> clf.predict(X[:2,:])
+    array([0, 0])
+    >>> clf.predict_proba(X[:2,:]).shape
+    (2, 3)
+    >>> clf.score(X)
+    1.7550724287639448
+    """
     _parameter_constraints: dict = {
-        **_BaseGEMINI._parameter_constraints,
+        **_DiscriminativeModel._parameter_constraints,
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
-                 verbose=False, random_state=None):
+    def __init__(self, n_clusters=3, gemini="mmd_ova", max_iter=1000, learning_rate=1e-3, solver="adam",
+                 batch_size=None, verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
+            gemini=gemini,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
@@ -51,7 +127,7 @@ class _LinearGEMINI(_BaseGEMINI, ABC):
         return softmax(H)
 
 
-class LinearMMD(_LinearGEMINI, _BaseMMD):
+class LinearMMD(LinearModel):
     """ Implementation of the maximisation of the MMD GEMINI using a logistic regression as a clustering
     distribution :math:`p(y|x)`.
 
@@ -92,6 +168,9 @@ class LinearMMD(_LinearGEMINI, _BaseMMD):
         Determines random number generation for weights and bias initialisation.
         Pass an int for reproducible results across multiple function calls.
 
+    kernel_params: dict, default=None
+        A dictionary of keyword arguments to pass to the chosen kernel function.
+
     Attributes
     ----------
     W_: ndarray of shape (n_features, n_clusters)
@@ -113,7 +192,9 @@ class LinearMMD(_LinearGEMINI, _BaseMMD):
 
     See Also
     --------
+    LinearModel: logistic regression trained for clustering with any GEMINI
     LinearWasserstein: logistic regression trained for clustering with the Wasserstein GEMINI
+    RIM: logistic regression trained with a regularised mutual information
 
     Examples
     --------
@@ -126,30 +207,36 @@ class LinearMMD(_LinearGEMINI, _BaseMMD):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.6949190522657067
+    1.7048160115136364
     """
     _parameter_constraints: dict = {
-        **_BaseMMD._parameter_constraints,
-        **_LinearGEMINI._parameter_constraints
+        **LinearModel._parameter_constraints,
+        "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS) + ["precomputed"])), callable],
+        "kernel_params": [dict, None],
+        "ovo": [bool]
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, kernel="linear", solver="adam", ovo=False,
-                 batch_size=None, verbose=False, random_state=None):
-        _BaseMMD.__init__(
-            self,
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", kernel="linear", ovo=False,
+                 batch_size=None, verbose=False, random_state=None, kernel_params=None):
+        super().__init__(
             n_clusters=n_clusters,
+            gemini=None,
             max_iter=max_iter,
             learning_rate=learning_rate,
-            ovo=ovo,
             solver=solver,
             batch_size=batch_size,
             verbose=verbose,
             random_state=random_state,
-            kernel=kernel
         )
+        self.ovo = ovo
+        self.kernel = kernel
+        self.kernel_params = kernel_params
+
+    def get_gemini(self):
+        return MMDGEMINI(ovo=self.ovo, kernel=self.kernel, kernel_params=self.kernel_params)
 
 
-class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
+class LinearWasserstein(LinearModel):
     """ Implementation of the maximisation of the Wasserstein GEMINI using a logistic regression as a clustering
     distribution :math:`p(y|x)`.
 
@@ -190,6 +277,9 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
         Determines random number generation for weights and bias initialisation.
         Pass an int for reproducible results across multiple function calls.
 
+    metric_params: dict, default=None
+        A dictionary of keyword arguments to pass to the chosen metric function.
+
     Attributes
     ----------
     W_: ndarray of shape (n_features_in, n_clusters)
@@ -211,7 +301,9 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
 
     See Also
     --------
+    LinearModel: logistic regression trained for clustering with any GEMINI
     LinearMMD: logistic regression trained for clustering with the MMD GEMINI
+    RIM: logistic regression trained with a regularised mutual information
 
     Examples
     --------
@@ -224,32 +316,36 @@ class LinearWasserstein(_LinearGEMINI, _BaseWasserstein):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.6993348362264595
+    1.710399298634854
     """
     _parameter_constraints: dict = {
-        **_BaseWasserstein._parameter_constraints,
-        **_LinearGEMINI._parameter_constraints
+        **LinearModel._parameter_constraints,
+        "metric": [StrOptions(set(list(PAIRWISE_DISTANCE_FUNCTIONS) + ["precomputed"])), callable],
+        "metric_params": [dict, None],
+        "ovo": [bool],
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, metric="euclidean", ovo=False,
-                 solver="adam", batch_size=None, verbose=False, random_state=None):
-        _BaseWasserstein.__init__(
-            self,
+                 solver="adam", batch_size=None, verbose=False, random_state=None, metric_params=None):
+        super().__init__(
             n_clusters=n_clusters,
+            gemini=None,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
-            ovo=ovo,
             batch_size=batch_size,
             verbose=verbose,
-            random_state=random_state,
-            metric=metric
+            random_state=random_state
         )
+        self.ovo = ovo
+        self.metric = metric
+        self.metric_params = metric_params
+
+    def get_gemini(self):
+        return WassersteinGEMINI(ovo=self.ovo, metric=self.metric, metric_params=self.metric_params)
 
 
-# noinspection PyPep8
-class RIM(_LinearGEMINI):
-    # noinspection PyPep8
+class RIM(LinearModel):
     """ Implementation of the maximisation of the classical mutual information using a logistic regression with an
         :math:`\ell_2` penalty on the weights. This implementation follows the framework described by Krause et al. in the
         RIM paper.
@@ -265,7 +361,7 @@ class RIM(_LinearGEMINI):
         learning_rate: float, default=1e-3
             Initial learning rate used. It controls the step-size in updating the weights.
 
-        reg: float, default=1.0
+        reg: float, default=0.1
             Regularisation hyperparameter for the $\ell_2$ weight penalty.
 
         solver: {'sgd','adam'}, default='adam'
@@ -304,6 +400,8 @@ class RIM(_LinearGEMINI):
 
         See Also
         --------
+        LinearModel: logistic regression trained for clustering with any GEMINI
+        LinearWasserstein: logistic regression trained for clustering with the Wasserstein GEMINI
         LinearMMD: logistic regression trained for clustering with the MMD GEMINI
 
         Examples
@@ -311,25 +409,26 @@ class RIM(_LinearGEMINI):
         >>> from sklearn.datasets import load_iris
         >>> from gemclus.linear import RIM
         >>> X,y=load_iris(return_X_y=True)
-        >>> clf = RIM(learning_rate=1e-2, random_state=0).fit(X)
+        >>> clf = RIM(random_state=0).fit(X)
         >>> clf.predict(X[:2,:])
         array([0, 0])
         >>> clf.predict_proba(X[:2,:]).shape
         (2, 3)
         >>> clf.score(X)
-        0.00962912118121384
+        0.43904857546947995
         """
 
     _parameter_constraints: dict = {
-        **_LinearGEMINI._parameter_constraints,
+        **LinearModel._parameter_constraints,
         "reg": [Interval(Real, 0, None, closed="left")]
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, reg=1,
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, reg=1e-1,
                  solver="adam", batch_size=None, verbose=False, random_state=None):
-        _LinearGEMINI.__init__(
+        LinearModel.__init__(
             self,
             n_clusters=n_clusters,
+            gemini="mi",
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
@@ -338,9 +437,6 @@ class RIM(_LinearGEMINI):
             random_state=random_state
         )
         self.reg = reg
-
-    def get_gemini(self):
-        return MI()
 
     def _update_weights(self, weights, gradients):
         # Add the regularisation gradient on the weight matrix

@@ -3,15 +3,14 @@ from numbers import Integral, Real
 
 import numpy as np
 
-from gemclus._base_gemini import _BaseGEMINI
-from gemclus.gemini import WassersteinGEMINI, MMDGEMINI, MI, WassersteinOvO
+from .._base_gemini import _DiscriminativeModel
 from sklearn.utils import check_array
 from sklearn.utils._param_validation import Interval
 from sklearn.utils.extmath import softmax
 from sklearn.utils.validation import check_is_fitted
 
 
-class Douglas(_BaseGEMINI):
+class Douglas(_DiscriminativeModel):
     """
     Implementation of the `DNDTs optimised using GEMINI leveraging apprised splits` tree algorithm. This model learns
     clusters by optimising learnable parameters to perform feature-wise soft-binnings and recombine those bins
@@ -22,6 +21,12 @@ class Douglas(_BaseGEMINI):
 
     n_clusters : int, default=3
         The number of clusters to form as well as the number of output neurons in the neural network.
+
+    gemini: str, GEMINI instance or None, default="wasserstein_ova"
+        GEMINI objective used to train this discriminative model. Can be "mmd_ova", "mmd_ovo", "wasserstein_ova",
+        "wasserstein_ovo", "mi" or other GEMINI available in `gemclus.gemini.AVAILABLE_GEMINI`. Default GEMINIs
+        involve the Euclidean metric or linear kernel. To incorporate custom metrics, a GEMINI can also
+        be passed as an instance. If None, the GEMINI will be the MMD OvA.
 
     n_cuts: int, default=1
         The number of cuts to consider per feature in the soft binning function of the DNDT
@@ -51,10 +56,6 @@ class Douglas(_BaseGEMINI):
     learning_rate: float, default=1e-2
         The learning rate hyperparameter for the optimiser's update rule.
 
-    gemini: gemclus.gemini.MMDGEMINI, gemclus.gemini.WassersteinGEMINI or gemclus.gemini.MI instance
-        The generalised mutual information objective to maximise w.r.t. the tree parameters. If set to `None`, the
-        one-vs-one Wasserstein is chosen.
-
     verbose: bool, default=False
         Whether to print progress messages to stdout
 
@@ -78,17 +79,17 @@ class Douglas(_BaseGEMINI):
     """
 
     _parameter_constraints: dict = {
-        **_BaseGEMINI._parameter_constraints,
+        **_DiscriminativeModel._parameter_constraints,
         "n_cuts": [Interval(Integral, 1, None, closed="left"), None],
         "feature_mask": [np.ndarray, None],
         "temperature": [Interval(Real, 0, None, closed="neither")],
-        "gemini": [WassersteinGEMINI, MMDGEMINI, MI, None],
     }
 
-    def __init__(self, n_clusters=3, n_cuts=1, feature_mask=None, temperature=0.1, max_iter=100, batch_size=None,
-                 solver="adam", learning_rate=1e-2, gemini=None, verbose=False, random_state=None):
+    def __init__(self, n_clusters=3, gemini="wasserstein_ova", n_cuts=1, feature_mask=None, temperature=0.1,
+                 max_iter=100, batch_size=None, solver="adam", learning_rate=1e-2, verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
+            gemini=gemini,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
@@ -99,7 +100,6 @@ class Douglas(_BaseGEMINI):
         self.n_cuts = n_cuts
         self.feature_mask = feature_mask
         self.temperature = temperature
-        self.gemini = gemini
 
     def _leaf_binning(self, X, cut_points):
         n = len(cut_points)
@@ -153,11 +153,6 @@ class Douglas(_BaseGEMINI):
         if self.verbose:
             print(f"Total will be {num_leaf} values per sample")
         self.leaf_scores_ = random_state.normal(size=(num_leaf, self.n_clusters))
-
-    def get_gemini(self):
-        if self.gemini is None:
-            return WassersteinOvO(metric="euclidean")
-        return self.gemini
 
     def _compute_grads(self, X, y_pred, gradient):
         # Start by the backprop through the softmax

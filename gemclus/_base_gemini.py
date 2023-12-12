@@ -7,16 +7,16 @@ from numbers import Integral, Real
 
 import numpy as np
 from sklearn.base import ClusterMixin, BaseEstimator
-from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRED_DISTANCES
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils import check_array, check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_is_fitted
 
-from gemclus.gemini import MMDOvO, MMDOvA, WassersteinOvO, WassersteinOvA
+from gemclus.gemini import AVAILABLE_GEMINIS
+from .gemini._gemini_losses import _GEMINI, _str_to_gemini
 
 
-class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
+class _DiscriminativeModel(ClusterMixin, BaseEstimator, ABC):
     """ This is the BaseGEMINI to derive to create a GEMINI MLP or linear clustering model.
      When deriving this class, there are a couple methods to override depending on the design of a discriminative model
      :math:`p(y|x)` or a specific GEMINI.
@@ -25,6 +25,12 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
     ----------
     n_clusters : int, default=3
         The maximum number of clusters to form as well as the number of output neurons in the neural network.
+
+    gemini: str, GEMINI instance or None, default="mmd_ova"
+        GEMINI objective used to train this discriminative model. Can be "mmd_ova", "mmd_ovo", "wasserstein_ova",
+        "wasserstein_ovo", "mi" or other GEMINI available in `gemclus.gemini.AVAILABLE_GEMINI`. Default GEMINIs
+        involve the Euclidean metric or linear kernel. To incorporate custom metrics, a GEMINI can also
+        be passed as an instance. If set to None, the GEMINI will be MMD OvA with linear kernel.
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -59,6 +65,7 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
     """
     _parameter_constraints: dict = {
         "n_clusters": [Interval(Integral, 1, None, closed="left")],
+        "gemini": [StrOptions(set(AVAILABLE_GEMINIS)), _GEMINI, None],
         "max_iter": [Interval(Integral, 1, None, closed="left")],
         "learning_rate": [Interval(Real, 0, None, closed="neither")],
         "solver": [StrOptions({"sgd", "adam"})],
@@ -67,9 +74,10 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         "random_state": [Interval(Integral, 0, None, closed="left"), None]
     }
 
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
-                 verbose=False, random_state=None):
+    def __init__(self, n_clusters=3, gemini="mmd_ova", max_iter=1000, learning_rate=1e-3, solver="adam",
+                 batch_size=None, verbose=False, random_state=None):
         self.n_clusters = n_clusters
+        self.gemini = gemini
         self.max_iter = max_iter
         self.learning_rate = learning_rate
         self.solver = solver
@@ -93,16 +101,19 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         """
         pass
 
-    @abstractmethod
     def get_gemini(self):
         """
         Initialise a :class:`gemclus.GEMINI` instance that will be used to train the model.
 
         Returns
         -------
-        gemini: :class:`gemclus.GEMINI` instance
+        gemini: a GEMINI instance
         """
-        pass
+        if self.gemini is None:
+            return _str_to_gemini("mmd_ova")
+        if isinstance(self.gemini, str):
+            return _str_to_gemini(self.gemini)
+        return self.gemini
 
     @abstractmethod
     def _compute_grads(self, X, y_pred, gradient):
@@ -352,156 +363,3 @@ class _BaseGEMINI(ClusterMixin, BaseEstimator, ABC):
         y_pred = self.predict_proba(X)
         return gemini(y_pred, K).item()
 
-
-class _BaseMMD(_BaseGEMINI, ABC):
-    """
-    Adds the MMD GEMINI to the base model.
-
-    Parameters
-    ----------
-    n_clusters : int, default=3
-        The maximum number of clusters to form as well as the number of output neurons in the neural network.
-
-    max_iter: int, default=1000
-        Maximum number of epochs to perform gradient descent in a single run.
-
-    learning_rate: float, default=1e-3
-        Initial learning rate used. It controls the step-size in updating the weights.
-
-    kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
-        default='linear'
-        The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
-        Currently, all kernel parameters are the default ones.
-        If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `y` of
-        `fit`, `fit_predict` and/or `score`.
-
-    ovo: bool, default=False
-        Whether to run the model using the MMD OvA (False) or the MMD OvO (True).
-
-    solver: {'sgd','adam'}, default='adam'
-        The solver for weight optimisation.
-
-        - 'sgd' refers to stochastic gradient descent.
-        - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
-
-    batch_size: int, default=None
-        The size of batches during gradient descent training. If set to None, the whole data will be considered.
-
-    verbose: bool, default=False
-        Whether to print progress messages to stdout
-
-    random_state: int, RandomState instance, default=None
-        Determines random number generation for weights and bias initialisation.
-        Pass an int for reproducible results across multiple function calls.
-
-    Attributes
-    ----------
-    optimiser_: `AdamOptimizer` or `SGDOptimizer`
-        The optimisation algorithm used for training depending on the chosen solver parameter.
-    labels_: ndarray of shape (n_samples)
-        The labels that were assigned to the samples passed to the :meth:`fit` method.
-    n_iter_: int
-        The number of iterations that the model took for converging.
-    """
-    _parameter_constraints: dict = {
-        **_BaseGEMINI._parameter_constraints,
-        "kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS) + ["precomputed"])), callable],
-        "ovo": [bool]
-    }
-
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, kernel="linear", batch_size=None,
-                 solver="adam", ovo=False, verbose=False, random_state=None):
-        super().__init__(
-            n_clusters=n_clusters,
-            max_iter=max_iter,
-            learning_rate=learning_rate,
-            solver=solver,
-            batch_size=batch_size,
-            verbose=verbose,
-            random_state=random_state
-        )
-        self.kernel = kernel
-        self.ovo = ovo
-
-    def get_gemini(self):
-        if self.ovo:
-            return MMDOvO(self.kernel)
-        else:
-            return MMDOvA(self.kernel)
-
-
-class _BaseWasserstein(_BaseGEMINI, ABC):
-    """
-    Adds the Wasserstein GEMINI to the base model.
-
-    Parameters
-    ----------
-    n_clusters : int, default=3
-        The maximum number of clusters to form as well as the number of output neurons in the neural network.
-
-    max_iter: int, default=1000
-        Maximum number of epochs to perform gradient descent in a single run.
-
-    learning_rate: float, default=1e-3
-        Initial learning rate used. It controls the step-size in updating the weights.
-
-    metric: {'cosine', 'euclidean', 'l2','l1','manhattan','cityblock', 'precomputed'},
-        default='euclidean'
-        The metric to use in combination with the Wasserstein objective. It corresponds to one value of
-        `PAIRED_DISTANCES`. Currently, all metric parameters are the default ones.
-        If the metric is set to 'precomputed', then a custom distance matrix must be passed to the argument `y` of
-        `fit`, `fit_predict` and/or `score`.
-
-    ovo: bool, default=False
-        Whether to run the model using the Wasserstein OvA (False) or the Wasserstein OvO (True).
-
-    solver: {'sgd','adam'}, default='adam'
-        The solver for weight optimisation.
-
-        - 'sgd' refers to stochastic gradient descent.
-        - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
-
-    batch_size: int, default=None
-        The size of batches during gradient descent training. If set to None, the whole data will be considered.
-
-    verbose: bool, default=False
-        Whether to print progress messages to stdout
-
-    random_state: int, RandomState instance, default=None
-        Determines random number generation for weights and bias initialisation.
-        Pass an int for reproducible results across multiple function calls.
-
-    Attributes
-    ----------
-    optimiser_: `AdamOptimizer` or `SGDOptimizer`
-        The optimisation algorithm used for training depending on the chosen solver parameter.
-    labels_: ndarray of shape (n_samples)
-        The labels that were assigned to the samples passed to the :meth:`fit` method.
-    n_iter_: int
-        The number of iterations that the model took for converging.
-    """
-    _parameter_constraints: dict = {
-        **_BaseGEMINI._parameter_constraints,
-        "metric": [StrOptions(set(list(PAIRED_DISTANCES) + ["precomputed"]))],
-        "ovo": [bool]
-    }
-
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
-                 metric="euclidean", ovo=False, verbose=False, random_state=None):
-        super().__init__(
-            n_clusters=n_clusters,
-            max_iter=max_iter,
-            learning_rate=learning_rate,
-            solver=solver,
-            batch_size=batch_size,
-            verbose=verbose,
-            random_state=random_state
-        )
-        self.metric = metric
-        self.ovo = ovo
-
-    def get_gemini(self):
-        if self.ovo:
-            return WassersteinOvO(self.metric)
-        else:
-            return WassersteinOvA(self.metric)
