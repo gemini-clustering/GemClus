@@ -1,6 +1,19 @@
 # History of changes
 
-## 0.2.0
+# In development
+
++ Introducing generic models that can be combined with any GEMINI
+  + `gemclus.linear.LinearModel`, `gemclus.mlp.MLPModel`, `gemclus.nonparametric.CategoricalModel`,
+    `gemclus.sparse.SparseLinearModel`, `gemclus.sparse.SparseMLPModel`
+  + The GEMINI parametrisation of DOUGLAS can now be done through string
+  + The dedicated MMD and Wasserstein models remain and support custom kernel/metric parameters
++ Fusing GEMINIs into a single class per distance
+  + `gemclus.gemini.MMDOvA` and `gemclus.gemini.MMDOvO` are now `gemclus.gemini.MMDGEMINI`
+  + `gemclus.gemini.WassersteinOvA` and `gemclus.gemini.WassersteinOvO` are now `gemclus.WassersteinGEMINI`
+  + Both the MMD and Wasserstein GEMINI now support custom kernel/metric parameters
++ Fixing a gradient mistake in the `gemclus.MI`
+
+## 0.2.0 (Latest)
 
 + Adding a new sparse logistic regression model trained with mutual information instead of MMD GEMINI: `gemclus.sparse.SparseLinearMI`
 + Adding new package containing methods for unsupervised tree clustering with end-to-end training: `gemclus.tree`. The package features a CART-like algorithm for clustering named `Kauri` and a differentiable tree named `Douglas`
