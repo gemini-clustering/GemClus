@@ -36,12 +36,12 @@ Doing discriminative clustering
 The package respects the `scikit-learn` conventions for models API. Thus, doing clustering with the GEMINI looks like::
 
     # Import the model and a simple datasets
-    from gemclus.mlp import MLPMMD
+    from gemclus.mlp import MLPModel
     from sklearn.datasets import load_iris
     X,y = load_iris(return_X_y=True)
 
     # Fit GEMINI clustering
-    model = MLPMMD(n_clusters=3).fit(X)
+    model = MLPModel(n_clusters=3, gemini="mmd_ova").fit(X)
     model.predict(X)
 
 .. note::

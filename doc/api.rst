@@ -14,13 +14,11 @@ The following classes implement the basic GEMINIs for scoring and evaluating any
 clustering.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: generated/gemini/
     :template: class.rst
 
-    gemini.MMDOvA
-    gemini.MMDOvO
-    gemini.WassersteinOvA
-    gemini.WassersteinOvO
+    gemini.MMDGEMINI
+    gemini.WassersteinGEMINI
     gemini.MI
 
 Clustering models
@@ -33,12 +31,14 @@ These models are based on standard distributions like the logistic regression or
 clustering.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: generated/models/
    :template: class.rst
 
+    linear.LinearModel
     linear.LinearMMD
     linear.LinearWasserstein
     linear.RIM
+    mlp.MLPModel
     mlp.MLPMMD
     mlp.MLPWasserstein
 
@@ -51,9 +51,10 @@ any decision boundary and do not have hyper parameters. However, the underlying 
 unseen samples for prediction.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: generated/models/
    :template: class.rst
 
+    nonparametric.CategoricalModel
     nonparametric.CategoricalMMD
     nonparametric.CategoricalWasserstein
 
@@ -64,11 +65,13 @@ These models can be trained to progressively remove features in the conditional 
 for selecting a subset of features which may enhance interpretability of clustering.
 
 .. autosummary::
-   :toctree: generated/
+   :toctree: generated/models/
    :template: class.rst
 
+    sparse.SparseLinearModel
     sparse.SparseLinearMI
     sparse.SparseLinearMMD
+    sparse.SparseMLPModel
     sparse.SparseMLPMMD
 
 Tree models
@@ -78,7 +81,7 @@ We propose clustering methods based on tree architectures. Thus rules are simult
 is learnt.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: generated/models/
     :template: class.rst
 
     tree.Kauri
@@ -88,7 +91,7 @@ The following functions are intended to help understanding the structure of the 
 inner rules.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: generated/models/
     :template: function.rst
     
     tree.print_kauri_tree
@@ -101,7 +104,7 @@ Constraints
 This method aims at decorating the GEMINI models to give further guidance on the desired clustering.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: generated/constraints/
     :template: function.rst
     
     add_mlcl_constraint
@@ -112,7 +115,7 @@ Dataset generation
 This package contains simple functions for generating synthetic datasets.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: generated/data/
     :template: function.rst
 
     data.draw_gmm

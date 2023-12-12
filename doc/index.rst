@@ -21,6 +21,7 @@ methods in this package.
 
    user_guide
    api
+   history
 
 .. toctree::
    :maxdepth: 2
