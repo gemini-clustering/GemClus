@@ -10,7 +10,6 @@ to clusters. The thresholds are learnt by GEMINI maximisation.
 """
 from sklearn import datasets, metrics
 
-from gemclus.gemini import MMDOvA
 from gemclus.tree import Douglas
 
 ###########################################################################
@@ -29,7 +28,7 @@ y = iris["target"]
 
 # %%douglas_learn
 
-model = Douglas(n_clusters=3, gemini=MMDOvA(), max_iter=100, n_cuts=1)
+model = Douglas(n_clusters=3, gemini="mmd_ova", max_iter=100, n_cuts=1)
 y_pred_linear = model.fit_predict(X)
 
 print("Score of model is: ", model.score(X))

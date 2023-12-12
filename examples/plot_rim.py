@@ -30,7 +30,7 @@ X, y = datasets.make_blobs(centers=3, cluster_std=0.5, n_samples=200, random_sta
 
 # %%training
 
-clf = RIM(n_clusters=3, random_state=0)
+clf = RIM(n_clusters=3, reg=1e-1, random_state=0)
 clf.fit(X)
 
 ##########################################################################

@@ -20,7 +20,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from gemclus import WassersteinModel
+from gemclus import DiscriminativeModel
 from gemclus.data import draw_gmm
 
 
@@ -30,18 +30,17 @@ from gemclus.data import draw_gmm
 
 # %%model
 
-class BinaryRegression(WassersteinModel):
-    # We start by defining the same parameters as expected by the parent class for Wasserstein GEMINI
-    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
-                 metric="euclidean", ovo=False, verbose=False, random_state=None):
+class BinaryRegression(DiscriminativeModel):
+    # We start by defining the same parameters as expected by the parent class for Discriminative model
+    def __init__(self, n_clusters=3, gemini="mi", max_iter=1000, learning_rate=1e-3, solver="adam", batch_size=None,
+                 verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
+            gemini=gemini,
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
             batch_size=batch_size,
-            metric=metric,
-            ovo=ovo,
             verbose=verbose,
             random_state=random_state
         )
@@ -103,7 +102,7 @@ class BinaryRegression(WassersteinModel):
 # We can test this model
 X, y = draw_gmm(n=100, loc=np.eye(2), scale=[np.eye(2) * 0.2, np.eye(2) * 0.2], pvals=np.ones(2) / 2, random_state=0)
 
-custom_model = BinaryRegression(n_clusters=2, ovo=True)
+custom_model = BinaryRegression(gemini="wasserstein_ovo", n_clusters=2)
 
 y_pred = custom_model.fit_predict(X)
 

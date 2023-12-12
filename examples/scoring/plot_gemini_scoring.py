@@ -43,7 +43,7 @@ p_y_given_x_2 = clf2.predict_proba(X)
 # %%scoring
 
 # Let's start with the WassersteinGEMINI (one-vs-all) and the Euclidean distance
-wasserstein_scoring = gemini.WassersteinOvA(metric="euclidean")
+wasserstein_scoring = gemini.WassersteinGEMINI(metric="euclidean")
 
 # We need to precompute the affinity matching this Wasserstein (will be the Euclidean metric here)
 affinity = wasserstein_scoring.compute_affinity(X)
@@ -62,7 +62,7 @@ print(f"\t=>Naive Bayes: {clf2_score:.3f}")
 
 # %%supervisedscoring
 # We now specify that the metric is precomputed instead
-wasserstein_scoring = gemini.WassersteinOvA(metric="precomputed")
+wasserstein_scoring = gemini.WassersteinGEMINI(metric="precomputed")
 
 # So, we precompute a distance where samples have distance 0 if they share the same label, 1 otherwise
 y_one_hot = np.eye(2)[y]
