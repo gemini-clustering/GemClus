@@ -21,7 +21,7 @@ def fake_data_pred():
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO(), MI()]
+    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True), MI()]
 )
 def test_gemini_objective(objective, data):
     X, y = data
@@ -35,7 +35,7 @@ def test_gemini_objective(objective, data):
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO(), MI()]
+    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True), MI()]
 )
 def test_empty_clusters_loss(objective, data):
     X, y = data
@@ -52,7 +52,7 @@ def test_empty_clusters_loss(objective, data):
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO()]
+    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True)]
 )
 def test_empty_clusters_gradients(objective, fake_data_pred):
     X, y = fake_data_pred
@@ -71,7 +71,7 @@ def test_empty_clusters_gradients(objective, fake_data_pred):
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO(), MI()]
+    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True), MI()]
 )
 def test_existing_gradient(objective, fake_data_pred):
     X, y = fake_data_pred
@@ -84,7 +84,8 @@ def test_existing_gradient(objective, fake_data_pred):
 
 @pytest.mark.parametrize(
     "objective, atol",
-    [(MMDOvA(), 1e-5), (MMDOvO(), 1e-5), (WassersteinOvA(), 1e-5), (WassersteinOvO(), 1e-5)]
+    [(MMDGEMINI(), 1e-5), (MMDGEMINI(ovo=True), 1e-5), (WassersteinGEMINI(), 1e-5), (WassersteinGEMINI(ovo=True), 1e-5),
+     (MI(), 1e-5)]
 )
 def test_gradient_precision(objective, atol, fake_data_pred):
     X, y_logits = fake_data_pred

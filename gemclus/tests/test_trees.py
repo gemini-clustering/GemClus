@@ -5,7 +5,7 @@ import gemclus
 from sklearn.utils.estimator_checks import check_estimator, check_clustering
 
 import numpy as np
-from gemclus.gemini import MMDOvA, MMDOvO, WassersteinOvA, WassersteinOvO
+from gemclus.gemini import MMDGEMINI, WassersteinGEMINI
 
 from sklearn import metrics
 
@@ -89,7 +89,7 @@ def test_douglas_estimator():
 
 
 @pytest.mark.parametrize(
-    "gemini", [MMDOvA(), MMDOvO(), WassersteinOvA(), WassersteinOvO()]
+    "gemini", [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True)]
 )
 @pytest.mark.timeout(5)
 def test_geminis_douglas(gemini):
@@ -105,7 +105,7 @@ def test_geminis_douglas(gemini):
 def test_batches_douglas():
     X, y = gemclus.data.celeux_one(n=1000, p=1, random_state=0)
 
-    clf = Douglas(verbose=True, random_state=0, gemini=MMDOvA(), batch_size=100, max_iter=10)
+    clf = Douglas(verbose=True, random_state=0, gemini=MMDGEMINI(), batch_size=100, max_iter=10)
     y_pred = clf.fit_predict(X)
 
     print(metrics.adjusted_rand_score(y_pred, y))

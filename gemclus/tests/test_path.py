@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_blobs
 
-from ..sparse import SparseMLPMMD, SparseLinearMMD, SparseLinearMI
+from ..sparse import SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def data():
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI]
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 )
 def test_sparse_stability(clf_class, data):
     clf = clf_class(random_state=0)
@@ -59,7 +59,7 @@ def test_weights_coherence(data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI]
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 )
 def test_erroneous_multiplier(clf_class, data):
     clf = clf_class(random_state=0)
@@ -81,7 +81,7 @@ def test_erroneous_multiplier(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI]
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 )
 def test_erroneous_min_features(clf_class, data):
     clf = clf_class(random_state=0)
@@ -103,7 +103,7 @@ def test_erroneous_min_features(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI]
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 )
 def test_excessive_threshold(clf_class, data):
     clf = clf_class(random_state=0)
@@ -125,7 +125,7 @@ def test_excessive_threshold(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI]
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 )
 def test_erroneous_threshold(clf_class, data):
     clf = clf_class(random_state=0)
@@ -146,7 +146,7 @@ def test_erroneous_threshold(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI]
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 )
 def test_batch_path(clf_class, data):
     clf = clf_class(batch_size=50, random_state=0, max_iter=100)
