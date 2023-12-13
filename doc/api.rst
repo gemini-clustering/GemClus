@@ -21,6 +21,7 @@ clustering.
     gemini.WassersteinGEMINI
     gemini.MI
     gemini.KLGEMINI
+    gemini.TVGEMINI
 
 Clustering models
 ==================
