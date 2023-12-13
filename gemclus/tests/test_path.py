@@ -4,6 +4,7 @@ from sklearn.datasets import make_blobs
 
 from ..sparse import SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel
 
+sparse_models = [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 
 @pytest.fixture
 def data():
@@ -15,7 +16,7 @@ def data():
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
+    sparse_models
 )
 def test_sparse_stability(clf_class, data):
     clf = clf_class(random_state=0)
@@ -59,7 +60,7 @@ def test_weights_coherence(data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
+    sparse_models
 )
 def test_erroneous_multiplier(clf_class, data):
     clf = clf_class(random_state=0)
@@ -81,7 +82,7 @@ def test_erroneous_multiplier(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
+    sparse_models
 )
 def test_erroneous_min_features(clf_class, data):
     clf = clf_class(random_state=0)
@@ -103,7 +104,7 @@ def test_erroneous_min_features(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
+    sparse_models
 )
 def test_excessive_threshold(clf_class, data):
     clf = clf_class(random_state=0)
@@ -125,7 +126,7 @@ def test_excessive_threshold(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
+    sparse_models
 )
 def test_erroneous_threshold(clf_class, data):
     clf = clf_class(random_state=0)
@@ -146,10 +147,9 @@ def test_erroneous_threshold(clf_class, data):
 
 @pytest.mark.parametrize(
     "clf_class",
-    [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
+    sparse_models
 )
 def test_batch_path(clf_class, data):
     clf = clf_class(batch_size=50, random_state=0, max_iter=100)
 
-    best_weights_v1, geminis_v1, penalties_v1, alphas_v1, n_features_v1 = clf.path(data, restore_best_weights=False,
-                                                                                   min_features=data.shape[1] - 1)
+    clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 1)

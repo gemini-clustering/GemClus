@@ -9,6 +9,9 @@ from ..mlp import MLPMMD, MLPWasserstein, MLPModel
 from ..nonparametric import CategoricalWasserstein, CategoricalMMD, CategoricalModel
 from ..sparse import SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel
 
+all_models = [LinearMMD, MLPMMD, LinearWasserstein, MLPWasserstein, SparseLinearMMD, SparseMLPMMD, RIM,
+              CategoricalMMD, CategoricalWasserstein, SparseLinearMI, LinearModel, MLPModel, SparseMLPModel,
+              SparseLinearModel, CategoricalModel]
 
 @pytest.fixture
 def data():
@@ -18,11 +21,10 @@ def data():
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearMMD(), MLPMMD(), LinearWasserstein(), MLPWasserstein(), SparseLinearMMD(), SparseMLPMMD(), RIM(),
-     CategoricalMMD(), CategoricalWasserstein(), SparseLinearMI(), LinearModel(), MLPModel(), SparseMLPModel(),
-     SparseLinearModel(), CategoricalModel()]
+    all_models
 )
 def test_default_clf_init(clf):
+    clf = clf()
     assert clf.learning_rate == 1e-3
     assert clf.n_clusters == 3
     assert clf.max_iter == 1000
@@ -32,7 +34,7 @@ def test_default_clf_init(clf):
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearModel, LinearMMD, LinearWasserstein, RIM]
+    [x for x in all_models if "Linear" in x.__name__] + [RIM]
 )
 def test_all_linear_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -46,7 +48,7 @@ def test_all_linear_attributes(clf, data):
 
 @pytest.mark.parametrize(
     "clf",
-    [CategoricalModel, CategoricalMMD, CategoricalWasserstein]
+    [x for x in all_models if "Categorical" in x.__name__]
 )
 def test_all_categorical_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -59,7 +61,7 @@ def test_all_categorical_attributes(clf, data):
 
 @pytest.mark.parametrize(
     "clf",
-    [MLPModel, MLPMMD, MLPWasserstein, SparseMLPMMD]
+    [x for x in all_models if "MLP" in x.__name__]
 )
 def test_all_mlp_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -77,7 +79,7 @@ def test_all_mlp_attributes(clf, data):
 
 @pytest.mark.parametrize(
     "clf",
-    [SparseMLPModel, SparseMLPMMD]
+    [x for x in all_models if "SparseMLP" in x.__name__]
 )
 def test_all_sparse_lassonet_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -89,7 +91,7 @@ def test_all_sparse_lassonet_attributes(clf, data):
 
 @pytest.mark.parametrize(
     "clf",
-    [SparseLinearModel, SparseLinearMMD, SparseLinearMI]
+    [x for x in all_models if "SparseLinear" in x.__name__]
 )
 def test_all_sparse_linear_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -98,60 +100,51 @@ def test_all_sparse_linear_attributes(clf, data):
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearMMD(), MLPMMD(), SparseMLPMMD(), SparseLinearMMD(), CategoricalMMD()]
+    [x for x in all_models if "MMD" in x.__name__]
 )
 def test_default_mmd(clf):
+    clf = clf()
     assert clf.kernel == "linear"
     assert not clf.ovo
 
 
 @pytest.mark.parametrize(
     "clf",
-    [LinearWasserstein(), MLPWasserstein(), CategoricalWasserstein()]
+    [x for x in all_models if "Wasserstein" in x.__name__]
 )
 def test_default_wasserstein(clf):
+    clf = clf()
     assert clf.metric == "euclidean"
     assert not clf.ovo
 
 
 @pytest.mark.parametrize(
-    "estimator",
-    [MLPMMD(max_iter=5), LinearMMD(max_iter=5), SparseMLPMMD(max_iter=5), SparseLinearMMD(max_iter=5),
-     MLPWasserstein(max_iter=5), LinearWasserstein(max_iter=5), RIM(max_iter=5), SparseLinearMI(max_iter=5),
-     LinearModel(max_iter=5), MLPModel(max_iter=5), SparseLinearModel(max_iter=5), SparseMLPModel(max_iter=5)]
+    "clf",
+    all_models
 )
-def test_all_estimators(estimator):
+def test_all_estimators(clf):
+    estimator = clf(max_iter=5)
     check_iterator = check_estimator(estimator, generate_only=True)
     for clf, check in check_iterator:
         if check.func == check_clustering:
             # The check clustering function tests if we output as many clusters as promised,
             # But since GEMINI may have fewer clusters, this test will never be satisfied
             continue
-        check(clf)
-
-
-@pytest.mark.parametrize(
-    "estimator",
-    [CategoricalModel(max_iter=5), CategoricalMMD(max_iter=5), CategoricalWasserstein(max_iter=5)]
-)
-def test_categorical_estimators(estimator):
-    check_iterator = check_estimator(estimator, generate_only=True)
-    for clf, check in check_iterator:
-        if check.func in [check_clustering, check_methods_sample_order_invariance, check_methods_subset_invariance]:
+        if check.func in [check_methods_sample_order_invariance, check_methods_subset_invariance] \
+                and "Categorical" in type(estimator).__name__:
             continue
         check(clf)
 
 
 @pytest.mark.parametrize(
-    "estimator",
-    [MLPModel, MLPMMD, LinearModel, LinearMMD, SparseMLPMMD, SparseLinearMMD, SparseLinearMI, MLPWasserstein,
-     LinearWasserstein, RIM]
+    "clf",
+    [x for x in all_models if "Categorical" not in x.__name__]
 )
 @pytest.mark.parametrize(
     "batch_size",
     [10, 50, None]
 )
-def test_batch_size(estimator, batch_size, data):
-    clf = estimator(max_iter=5, batch_size=batch_size)
+def test_batch_size(clf, batch_size, data):
+    clf = clf(max_iter=5, batch_size=batch_size)
     clf.fit(data)
     assert hasattr(clf, "labels_")
