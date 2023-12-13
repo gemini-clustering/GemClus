@@ -1,3 +1,4 @@
+from abc import ABC
 from numbers import Real
 
 import numpy as np
@@ -7,7 +8,20 @@ from .._constraints import constraint_params
 from ._base_loss import _GEMINI
 
 
-class KLGEMINI(_GEMINI):
+class _FDivergence(_GEMINI, ABC):
+    # This helper intermediate class simply defines the compute_affinity for all f-divergences
+    def compute_affinity(self, X, y=None):
+        """
+        Unused for f-divergences.
+
+        Returns
+        -------
+        None
+        """
+        return None
+
+
+class KLGEMINI(_FDivergence):
     """
     Implements the one-vs-all and one-vs-one KL GEMINI.
 
@@ -20,7 +34,7 @@ class KLGEMINI(_GEMINI):
     The one-vs-one version compares the KL divergence between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{KL}(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{KL}(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -68,16 +82,6 @@ class KLGEMINI(_GEMINI):
         else:
             return mutual_information
 
-    def compute_affinity(self, X, y=None):
-        """
-        Unused for f-divergences.
-
-        Returns
-        -------
-        None
-        """
-        return None
-
 
 class MI(KLGEMINI):
     """
@@ -99,7 +103,7 @@ class MI(KLGEMINI):
         super().__init__(ovo=False, epsilon=epsilon)
 
 
-class TVGEMINI(_GEMINI):
+class TVGEMINI(_FDivergence):
     """
     Implements the one-vs-all and one-vs-one Total Variation distance GEMINI.
 
@@ -112,7 +116,7 @@ class TVGEMINI(_GEMINI):
     The one-vs-one version compares the TV distance between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{TV}(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{TV}(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -171,13 +175,3 @@ class TVGEMINI(_GEMINI):
             return tv_gemini, 0.5 * gradients * clip_mask
         else:
             return tv_gemini
-
-    def compute_affinity(self, X, y=None):
-        """
-        Unused for f-divergences.
-
-        Returns
-        -------
-        None
-        """
-        return None
