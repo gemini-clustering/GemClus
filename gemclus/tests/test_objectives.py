@@ -4,7 +4,7 @@ from sklearn.utils.extmath import softmax
 
 from ..gemini import *
 from ..data import celeux_one
-from ..gemini._gemini_losses import _str_to_gemini
+from ..gemini._utils import _str_to_gemini
 
 all_geminis = [_str_to_gemini(x) for x in AVAILABLE_GEMINIS if x!="mi"]
 

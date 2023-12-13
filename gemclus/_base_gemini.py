@@ -13,7 +13,8 @@ from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.validation import check_is_fitted
 
 from gemclus.gemini import AVAILABLE_GEMINIS
-from .gemini._gemini_losses import _GEMINI, _str_to_gemini
+from .gemini._base_loss import _GEMINI
+from .gemini._utils import _str_to_gemini
 
 
 class DiscriminativeModel(ClusterMixin, BaseEstimator, ABC):
