@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRED_DISTANCES
 from sklearn.utils._param_validation import StrOptions, Interval
 from .._constraints import constraint_params
 
-AVAILABLE_GEMINIS = ["mmd_ova", "mmd_ovo", "wasserstein_ova", "wasserstein_ovo", "kl_ova", "mi"]
+AVAILABLE_GEMINIS = ["mmd_ova", "mmd_ovo", "wasserstein_ova", "wasserstein_ovo", "kl_ova", "kl_ovo", "mi"]
 
 
 def _str_to_gemini(gemini_str):
@@ -24,6 +24,8 @@ def _str_to_gemini(gemini_str):
         return WassersteinGEMINI(ovo=True)
     elif gemini_str == "kl_ova" or gemini_str == "mi":
         return MI()
+    elif gemini_str == "kl_ovo":
+        return KLGEMINI(ovo=True)
 
 
 class _GEMINI(ABC):
