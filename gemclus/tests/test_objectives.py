@@ -4,7 +4,9 @@ from sklearn.utils.extmath import softmax
 
 from ..gemini import *
 from ..data import celeux_one
+from ..gemini._gemini_losses import _str_to_gemini
 
+all_geminis = [_str_to_gemini(x) for x in AVAILABLE_GEMINIS if x!="mi"]
 
 @pytest.fixture
 def data():
@@ -21,7 +23,7 @@ def fake_data_pred():
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True), KLGEMINI(), KLGEMINI(ovo=True)]
+   all_geminis
 )
 def test_gemini_objective(objective, data):
     X, y = data
@@ -35,7 +37,7 @@ def test_gemini_objective(objective, data):
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True), KLGEMINI(), KLGEMINI(ovo=True)]
+    all_geminis
 )
 def test_empty_clusters_loss(objective, data):
     X, y = data
@@ -52,7 +54,7 @@ def test_empty_clusters_loss(objective, data):
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True), KLGEMINI(), KLGEMINI(ovo=True)]
+    all_geminis
 )
 def test_empty_clusters_gradients(objective, fake_data_pred):
     X, y = fake_data_pred
@@ -71,7 +73,7 @@ def test_empty_clusters_gradients(objective, fake_data_pred):
 
 @pytest.mark.parametrize(
     "objective",
-    [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True), KLGEMINI(), KLGEMINI(ovo=True)]
+    all_geminis
 )
 def test_existing_gradient(objective, fake_data_pred):
     X, y = fake_data_pred
@@ -84,8 +86,7 @@ def test_existing_gradient(objective, fake_data_pred):
 
 @pytest.mark.parametrize(
     "objective, atol",
-    [(MMDGEMINI(), 1e-5), (MMDGEMINI(ovo=True), 1e-5), (WassersteinGEMINI(), 1e-5), (WassersteinGEMINI(ovo=True), 1e-5),
-     (KLGEMINI(), 1e-5), (KLGEMINI(ovo=True), 1e-5)]
+    [(gemini, 1e-5) for gemini in all_geminis]
 )
 def test_gradient_precision(objective, atol, fake_data_pred):
     X, y_logits = fake_data_pred
