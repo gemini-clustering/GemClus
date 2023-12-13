@@ -126,6 +126,7 @@ class TVGEMINI(_FDivergence):
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
     """
+
     @constraint_params(
         {
             "ovo": [bool],
@@ -175,3 +176,61 @@ class TVGEMINI(_FDivergence):
             return tv_gemini, 0.5 * gradients * clip_mask
         else:
             return tv_gemini
+
+
+class HellingerGEMINI(_FDivergence):
+    """
+    Implements the one-vs-all and one-vs-one Squared Hellinger distance GEMINI.
+
+    The one-vs-all version compares the squared Hellinger distance distance between a cluster distribution
+    and the data distribution.
+
+    .. math::
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{H}^2(p(x|y)\|p(x))]
+
+    The one-vs-one version compares the squared Hellinger distance between two cluster distributions.
+
+    .. math::
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{H}^2(p(x|y_a)\|p(x|y_b))]
+
+    Parameters
+    ----------
+    ovo: bool, default=False
+        Whether to use the one-vs-all objective (False) or the one-vs-one objective (True).
+
+    epsilon: float, default=1e-12
+        The precision for clipping the prediction values in order to avoid numerical instabilities.
+    """
+    @constraint_params(
+        {
+            "ovo": [bool],
+            "epsilon": [Interval(Real, 0, 1, closed="neither")]
+        }
+    )
+    def __init__(self, ovo=False, epsilon=1e-12):
+        super().__init__(epsilon)
+        self.ovo = ovo
+
+    def evaluate(self, y_pred, affinity, return_grad=False):
+        # Use a clip mask for numerical stability in gradients
+        clip_mask = (y_pred > self.epsilon) & (y_pred < 1 - self.epsilon)
+        p_y_x = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
+        p_y = p_y_x.mean(0)
+
+        cluster_wise_estimates = np.sqrt(p_y_x * p_y)
+        estimates = np.sum(cluster_wise_estimates, axis=1)
+
+        if self.ovo:
+            estimates = np.square(estimates)
+
+        hellinger_gemini = 1 - np.mean(estimates, axis=0)
+
+        if return_grad:
+            gradients = -0.5 * (p_y / cluster_wise_estimates + np.mean(p_y_x / cluster_wise_estimates, axis=0))
+            if self.ovo:
+                gradients *= 2 * estimates.reshape((-1, 1))
+
+            gradients /= y_pred.shape[0]
+            return hellinger_gemini, gradients * clip_mask
+        else:
+            return hellinger_gemini

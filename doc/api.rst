@@ -22,6 +22,7 @@ clustering.
     gemini.MI
     gemini.KLGEMINI
     gemini.TVGEMINI
+    gemini.HellingerGEMINI
 
 Clustering models
 ==================
