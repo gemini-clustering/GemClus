@@ -2,6 +2,7 @@
 
 # In development
 
++ New GEMINIs: `HellingerGEMINI`, `TVGEMINI` and `KLGEMINI`
 + Introducing generic models that can be combined with any GEMINI
   + `gemclus.linear.LinearModel`, `gemclus.mlp.MLPModel`, `gemclus.nonparametric.CategoricalModel`,
     `gemclus.sparse.SparseLinearModel`, `gemclus.sparse.SparseMLPModel`
