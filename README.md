@@ -1,4 +1,5 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/gemini-clustering/GemClus/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/gemini-clustering/GemClus/tree/main)
+[![Downloads](https://static.pepy.tech/badge/gemclus)](https://pepy.tech/project/gemclus)
 
 # GEMCLUS - A package for discriminative clustering using GEMINI
 
