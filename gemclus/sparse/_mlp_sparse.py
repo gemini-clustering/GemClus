@@ -13,9 +13,7 @@ from ..mlp._mlp_geminis import MLPModel
 
 
 class SparseMLPModel(MLPModel):
-    """ This is the BaseSparseGEMINI template to derive to create a Sparse GEMINI MLP clustering model.
-    When deriving, the only methods to adapt is the _compute_gemini methods which
-    should be able to return the gradient with respect to the conditional distribution p(y|x).
+    """ Implementation of a neural network as a clustering distribution :math:`p(y|x)` with variable selection.
 
     On top of the vanilla MLP GEMINI model, this variation brings a skip connection from the data to the cluster
     output. This skip connection ensures a sparsity constraint through a group-lasso penalty and a proximal gradient
