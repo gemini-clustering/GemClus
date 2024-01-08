@@ -109,7 +109,7 @@ class MMDGEMINI(_GEMINI):
 
             delta = np.sqrt(np.maximum(-2 * omega + A + A.T, 0))  # For numerical stability, keep if positive
 
-            mmd_ovo_value = pi @ delta @ pi.T
+            mmd_ovo_value = (pi @ delta @ pi.T).squeeze()
 
             if return_grad:
                 # Some distances may be equal to 0 (including self-distances)
@@ -138,7 +138,7 @@ class MMDGEMINI(_GEMINI):
 
             delta = np.sqrt(np.maximum(a + c - 2 * b, 0))  # For numerical stability, keep if positive
 
-            mmd_ova_value = np.dot(pi, delta)
+            mmd_ova_value = np.dot(pi, delta).squeeze()
 
             if return_grad:
                 tau_grad = (np.eye(N) - 1 / N) @ normalised_kernel @ (alpha - 1)

@@ -33,7 +33,7 @@ def test_gemini_objective(objective, data):
 
     assert not np.isnan(loss)
     assert loss > 0
-
+    assert len(loss.shape) == 0
 
 @pytest.mark.parametrize(
     "objective",
