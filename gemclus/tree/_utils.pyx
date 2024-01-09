@@ -3,7 +3,7 @@ cimport numpy as np
 
 cdef class Split:
 
-    cdef readonly np.float64_t gain, threshold # FIXME: perhaps double
+    cdef readonly np.float64_t gain, threshold
     cdef readonly bint is_categorical
     cdef readonly np.int64_t leaf, left_target, right_target, feature
 

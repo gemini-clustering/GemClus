@@ -81,7 +81,7 @@ class MLPModel(DiscriminativeModel):
     MLPWasserstein: two-layer neural network trained for clustering with the Wasserstein GEMINI
 
     Examples
-    -------- #TODO fix
+    --------
     >>> from sklearn.datasets import load_iris
     >>> from gemclus.mlp import MLPModel
     >>> X,y=load_iris(return_X_y=True)
@@ -95,7 +95,7 @@ class MLPModel(DiscriminativeModel):
     """
     _parameter_constraints: dict = {
         **DiscriminativeModel._parameter_constraints,
-        "hidden_dim": [Interval(Integral, 1, None, closed="left")],
+        "n_hidden_dim": [Interval(Integral, 1, None, closed="left")],
     }
 
     def __init__(self, n_clusters=3, gemini="mmd_ova", max_iter=1000, learning_rate=1e-3, solver="adam",
@@ -224,7 +224,7 @@ class MLPMMD(MLPModel):
     MLPWasserstein: two-layer neural network trained for clustering with the Wasserstein GEMINI
 
     Examples
-    -------- #TODO fix
+    --------
     >>> from sklearn.datasets import load_iris
     >>> from gemclus.mlp import MLPMMD
     >>> X,y=load_iris(return_X_y=True)
