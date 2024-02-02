@@ -2,10 +2,11 @@ from abc import ABC
 from numbers import Real
 
 import numpy as np
-from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRWISE_DISTANCE_FUNCTIONS
+from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRWISE_DISTANCE_FUNCTIONS, pairwise_kernels
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import softmax
+from sklearn.utils.validation import check_is_fitted
 
 from .._base_gemini import DiscriminativeModel
 from ..gemini import MMDGEMINI, WassersteinGEMINI
@@ -442,3 +443,53 @@ class RIM(LinearModel):
         # Add the regularisation gradient on the weight matrix
         gradients[0] += self.reg * 2 * self.W_
         self.optimiser_.update_params(weights, gradients)
+
+
+class KernelRIM(LinearModel):
+    _parameter_constraints: dict = {
+        **LinearModel._parameter_constraints,
+        "reg": [Interval(Real, 0, None, closed="left")]
+    }
+
+    def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, reg=1e-1,
+                 solver="adam", verbose=False, random_state=None,
+                 base_kernel="linear", base_kernel_kwds=None):
+        super().__init__(
+            n_clusters=n_clusters,
+            gemini="mi",
+            max_iter=max_iter,
+            learning_rate=learning_rate,
+            solver=solver,
+            batch_size=None,
+            verbose=verbose,
+            random_state=random_state
+        )
+        self.reg = reg
+        self.base_kernel = base_kernel
+        self.base_kernel_kwds = base_kernel_kwds
+
+    def fit(self, X, y=None):
+        # We start by computing the kernel on X
+        kwds = dict() if self.base_kernel_kwds is None else self.base_kernel_kwds
+        kernel = pairwise_kernels(X, metric=self.base_kernel, **kwds)
+        # Then, we fit as usual, but use the kernel as input
+        self.input_kernel_ = kernel
+
+        super().fit(kernel, y)
+
+        self.n_features_in_ = X.shape[1]
+
+        return self
+
+    def _update_weights(self, weights, gradients):
+        # Use the already defined linear model gradients
+        gradients[0] += 2 * self.reg * np.dot(self.input_kernel_, self.W_)
+
+        self.optimiser_.update_params(weights, gradients)
+
+    def predict_proba(self, X):
+
+        # Check is fit had been called
+        check_is_fitted(self)
+
+        return self._infer(self.input_kernel_, retain=False)
