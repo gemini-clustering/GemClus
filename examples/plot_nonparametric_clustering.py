@@ -4,6 +4,9 @@ Non parametric clustering
 ==========================
 
 This example illustrates how we can run nonparametric clustering using GEMINI.
+The specificity of this model is that the decision of model is not dependent on the position of the inputs, but
+only on the parameters associated to the input. Consequently, this model cannot be used for unseen samples as
+it will always return the same predictions.
 """
 
 import numpy as np
