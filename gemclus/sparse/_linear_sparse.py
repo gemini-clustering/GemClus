@@ -1,3 +1,4 @@
+import warnings
 from numbers import Real
 
 import numpy as np
@@ -41,6 +42,10 @@ class SparseLinearModel(LinearModel):
 
     learning_rate: float, default=1e-3
         Initial learning rate used. It controls the step-size in updating the weights.
+
+    dynamic: bool, default=False
+        Whether to run the path in dynamic mode or not. The dynamic mode consists of affinities computed using
+        only the subset of selected variables instead of all variables.
 
     solver: {'sgd','adam'}, default='adam'
         The solver for weight optimisation.
@@ -95,11 +100,12 @@ class SparseLinearModel(LinearModel):
     _parameter_constraints: dict = {
         **LinearModel._parameter_constraints,
         "alpha": [Interval(Real, 0, np.inf, closed="left")],
-        "groups": [list, None]
+        "groups": [list, None],
+        "dynamic": [bool]
     }
 
     def __init__(self, n_clusters=3, gemini="mmd_ova", groups=None, max_iter=1000, learning_rate=1e-3, alpha=1e-2,
-                 batch_size=None, solver="adam", verbose=False, random_state=None):
+                 batch_size=None, dynamic=False, solver="adam", verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             gemini=gemini,
@@ -112,6 +118,7 @@ class SparseLinearModel(LinearModel):
         )
         self.alpha = alpha
         self.groups = groups
+        self.dynamic = dynamic
 
     def _update_weights(self, weights, gradients):
         # First update the weights according to our optimiser
@@ -171,7 +178,8 @@ class SparseLinearModel(LinearModel):
             best.
         restore_best_weights: bool, default=True
             After performing the path, the best weights offering simultaneously good GEMINI score and few features
-            are restored to the model.
+            are restored to the model. If the model is set to `dynamic=True`, then this option will be ignored because
+            of the incomparable nature of GEMINIs when the number of selected variables change.
         early_stopping_factor: float, default=0.99
             The percentage factor beyond which upgrades of the GEMINI or the group-lasso penalty are considered
             too small for early stopping.
@@ -197,10 +205,14 @@ class SparseLinearModel(LinearModel):
                                                                                  early_stopping_factor, max_patience)
 
         if restore_best_weights:
-            if self.verbose:
-                print("Restoring best weights")
-            np.copyto(self.W_, best_weights[0])
-            np.copyto(self.b_, best_weights[1])
+            if not self.dynamic:
+                if self.verbose:
+                    print("Restoring best weights")
+                np.copyto(self.W_, best_weights[0])
+                np.copyto(self.b_, best_weights[1])
+            else:
+                warnings.warn("The option restore_best_weights is incompatible with the dynamic mode. The final model "
+                              "of the path will be kept.")
 
         return best_weights, geminis, group_lasso_penalties, alphas, n_features
 
@@ -234,6 +246,10 @@ class SparseLinearMMD(SparseLinearModel):
 
     ovo: bool, default=False
         Whether to run the model using the MMD OvA (False) or the MMD OvO (True).
+
+    dynamic: bool, default=False
+        Whether to run the path in dynamic mode or not. The dynamic mode consists of affinities computed using
+        only the subset of selected variables instead of all variables.
 
     solver: {'sgd','adam'}, default='adam'
         The solver for weight optimisation.
@@ -308,13 +324,15 @@ class SparseLinearMMD(SparseLinearModel):
     }
 
     def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, kernel="linear", ovo=False,
-                 alpha=1e-2, solver="adam", batch_size=None, verbose=False, random_state=None, kernel_params=None):
+                 alpha=1e-2, dynamic=False, solver="adam", batch_size=None, verbose=False, random_state=None,
+                 kernel_params=None):
         super().__init__(
             n_clusters=n_clusters,
             gemini=None,
             groups=groups,
             max_iter=max_iter,
             learning_rate=learning_rate,
+            dynamic=dynamic,
             solver=solver,
             batch_size=batch_size,
             verbose=verbose,
@@ -428,6 +446,7 @@ class SparseLinearMI(SparseLinearModel):
             gemini="mi",
             groups=groups,
             max_iter=max_iter,
+            dynamic=False,
             learning_rate=learning_rate,
             solver=solver,
             batch_size=batch_size,

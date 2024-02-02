@@ -1,3 +1,4 @@
+import warnings
 from numbers import Real
 
 import numpy as np
@@ -40,6 +41,10 @@ class SparseMLPModel(MLPModel):
 
     n_hidden_dim: int, default=20
         The number of neurons in the hidden layer of the neural network.
+
+    dynamic: bool, default=False
+        Whether to run the path in dynamic mode or not. The dynamic mode consists of affinities computed using
+        only the subset of selected variables instead of all variables.
 
     solver: {'sgd','adam'}, default='adam'
         The solver for weight optimisation.
@@ -106,10 +111,11 @@ class SparseMLPModel(MLPModel):
         **MLPModel._parameter_constraints,
         "M": [Interval(Real, 0, np.inf, closed="left")],
         "alpha": [Interval(Real, 0, np.inf, closed="left")],
+        "dynamic": [bool]
     }
 
     def __init__(self, n_clusters=3, gemini="mmd_ova", groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20,
-                 M=10, alpha=1e-2, solver="adam", batch_size=None, verbose=False, random_state=None):
+                 M=10, alpha=1e-2, dynamic=False, solver="adam", batch_size=None, verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             gemini=gemini,
@@ -124,6 +130,7 @@ class SparseMLPModel(MLPModel):
         self.M = M
         self.alpha = alpha
         self.groups = groups
+        self.dynamic = dynamic
 
     def _init_params(self, random_state, X=None):
         super()._init_params(random_state, X)
@@ -223,7 +230,8 @@ class SparseMLPModel(MLPModel):
             best.
         restore_best_weights: bool, default=True
             After performing the path, the best weights offering simultaneously good GEMINI score and few features
-            are restored to the model.
+            are restored to the model. If the model is set to `dynamic=True`, then this option will be ignored because
+            of the incomparable nature of GEMINIs when the number of selected variables change.
         early_stopping_factor: float, default=0.99
             The percentage factor beyond which upgrades of the GEMINI or the group-lasso penalty are considered
             too small for early stopping.
@@ -249,13 +257,17 @@ class SparseMLPModel(MLPModel):
                                                                                  early_stopping_factor, max_patience)
 
         if restore_best_weights:
-            if self.verbose:
-                print("Restoring best weights")
-            np.copyto(self.W1_, best_weights[0])
-            np.copyto(self.W2_, best_weights[1])
-            np.copyto(self.W_skip_, best_weights[2])
-            np.copyto(self.b1_, best_weights[3])
-            np.copyto(self.b2_, best_weights[4])
+            if not self.dynamic:
+                if self.verbose:
+                    print("Restoring best weights")
+                np.copyto(self.W1_, best_weights[0])
+                np.copyto(self.W2_, best_weights[1])
+                np.copyto(self.W_skip_, best_weights[2])
+                np.copyto(self.b1_, best_weights[3])
+                np.copyto(self.b2_, best_weights[4])
+            else:
+                warnings.warn("The option restore_best_weights is incompatible with the dynamic mode. The final model "
+                              "of the path will be kept.")
 
         return best_weights, geminis, group_lasso_penalties, alphas, n_features
 
@@ -310,6 +322,10 @@ class SparseMLPMMD(SparseMLPModel):
 
     M: float, default=10 The hierarchy coefficient that controls the relative strength between the group-lasso
         penalty of the skip connection and the sparsity of the first layer of the MLP.
+
+    dynamic: bool, default=False
+        Whether to run the path in dynamic mode or not. The dynamic mode consists of affinities computed using
+        only the subset of selected variables instead of all variables.
 
     batch_size: int, default=None
         The size of batches during gradient descent training. If set to None, the whole data will be considered.
@@ -382,8 +398,8 @@ class SparseMLPMMD(SparseMLPModel):
     }
 
     def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, kernel="linear",
-                 M=10, batch_size=None, alpha=1e-2, ovo=False, solver="adam", verbose=False, random_state=None,
-                 kernel_params=None):
+                 M=10, batch_size=None, alpha=1e-2, ovo=False, dynamic=False, solver="adam", verbose=False,
+                 random_state=None, kernel_params=None):
         super().__init__(
             n_clusters=n_clusters,
             gemini=None,
@@ -391,6 +407,7 @@ class SparseMLPMMD(SparseMLPModel):
             max_iter=max_iter,
             learning_rate=learning_rate,
             n_hidden_dim=n_hidden_dim,
+            dynamic=dynamic,
             solver=solver,
             batch_size=batch_size,
             verbose=verbose,

@@ -185,3 +185,16 @@ def test_bad_groups(clf_class, groups, data):
         print(error)
     else:
         assert False
+
+@pytest.mark.parametrize(
+    "clf_class",
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearModel, SparseMLPModel]
+)
+def test_dynamic(clf_class, data):
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, dynamic=True)
+
+    clf.path(data, restore_best_weights=False, min_features=data.shape[1]-3)
+
+    print(clf.get_selection())
+
+    assert clf.dynamic
