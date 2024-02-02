@@ -6,6 +6,7 @@ from ..sparse import SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinear
 
 sparse_models = [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
 
+
 @pytest.fixture
 def data():
     np.random.seed(0)
@@ -153,3 +154,34 @@ def test_batch_path(clf_class, data):
     clf = clf_class(batch_size=50, random_state=0, max_iter=100)
 
     clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 1)
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [[np.array([0]), np.array([1, 2])], [[0], [1, 2]], [np.array([i]) for i in range(10)], [[i] for i in range(10)]]
+)
+@pytest.mark.parametrize(
+    "clf_class",
+    sparse_models
+)
+def test_good_groups(clf_class, groups, data):
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, groups=groups)
+    clf.path(data, restore_best_weights=False, min_features=data.shape[1])
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [[[-1]], [[0], [0]], [[0], [0, 1]], [[10]], [[0, 0], [2, 3, 4, 5, 6, 7, 8, 9]]]
+)
+@pytest.mark.parametrize(
+    "clf_class",
+    sparse_models
+)
+def test_bad_groups(clf_class, groups, data):
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, groups=groups)
+    try:
+        clf.path(data, restore_best_weights=False, min_features=data.shape[1])
+    except AssertionError as error:
+        print(error)
+    else:
+        assert False

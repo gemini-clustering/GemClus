@@ -4,13 +4,27 @@ import numpy as np
 from sklearn.neural_network._stochastic_optimizers import SGDOptimizer
 from sklearn.utils import check_random_state
 
+
 def check_groups(groups, n_features_in):
     if groups is not None:
         all_indices = []
         for g in groups:
             all_indices.extend(list(g))
-        assert len(all_indices) == n_features_in and set(all_indices) == set(range(n_features_in)), \
-            f"Groups must form a partition of the set of variable indices"
+        # Ensure that the indices are valid
+        assert min(all_indices)>=0 and max(all_indices)<n_features_in, \
+            f"Indices passed to the groups argument should be contained in [0, {n_features_in}]"
+        if len(all_indices) == n_features_in:
+            # We expect that it is a partition, so we should have as much indices as the number of features
+            assert set(all_indices) == set(range(n_features_in)), \
+                "Groups must form a partition of the set of variable indices. Perhaps there are duplicate indices?"
+            return groups
+        else:
+            # Not all indices are covered by the proposal, so let's assure that they are unique, then complete
+            assert len(set(all_indices)) == len(all_indices), "There cannot be duplicate entries in groups."
+            new_groups = groups + [[i] for i in range(n_features_in) if i not in all_indices]
+            return new_groups
+    else:
+        return None
 
 
 def compute_val_score(clf, X, batch_size):
@@ -27,8 +41,6 @@ def compute_val_score(clf, X, batch_size):
 
 def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
           early_stopping_factor=0.99, max_patience=10):
-    clf._validate_data(X)
-    check_groups(clf.groups, X.shape[1])
     if alpha_multiplier <= 1:
         warnings.warn(f"The alpha multiplier is lower or equal to 1. This will not increase alpha during the path. "
                       f"Setting it again to default parameters: 1.05")

@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS
 from sklearn.neural_network._stochastic_optimizers import SGDOptimizer
 from sklearn.utils._param_validation import Interval, StrOptions
 
-from ._base_sparse import _path
+from ._base_sparse import _path, check_groups
 from ._prox_grad import linear_prox_grad, group_linear_prox_grad
 from ..gemini import MMDGEMINI
 from ..linear._linear_geminis import LinearModel
@@ -32,8 +32,9 @@ class SparseLinearModel(LinearModel):
 
     groups: list of arrays of various shapes, default=None
         If groups is set, it must describe a partition of the indices of variables. This will be used for performing
-        variable selection with groups of features considered to represent one variables. This option can typically be
-        used for one-hot-encoded variables.
+        variable selection with groups of features considered to represent one variable. This option can typically be
+        used for one-hot-encoded variables. Variable indices that are not entered will be considered alone.
+        For example, with 3 features, accepted values can be [[0],[1],[2]], [[0,1],[2]] or [[0,1]].
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -72,6 +73,8 @@ class SparseLinearModel(LinearModel):
         The labels that were assigned to the samples passed to the :meth:`fit` method.
     n_iter_: int
         The number of iterations that the model took for converging.
+    groups_: list of lists of int or None
+        The explicit partition of the variables formed by the groups parameter if it was not None.
 
     References
     ----------
@@ -116,10 +119,10 @@ class SparseLinearModel(LinearModel):
 
         # Then statisfy the sparsity constraint of the MLP by
         # evaluating the proximal gradient
-        if self.groups is None:
+        if self.groups_ is None:
             new_W = linear_prox_grad(self.W_, self.alpha * self.optimiser_.learning_rate)
         else:
-            new_W = group_linear_prox_grad(self.groups, self.W_, self.alpha * self.optimiser_.learning_rate)
+            new_W = group_linear_prox_grad(self.groups_, self.W_, self.alpha * self.optimiser_.learning_rate)
 
         np.copyto(self.W_, new_W)
 
@@ -139,6 +142,11 @@ class SparseLinearModel(LinearModel):
 
     def _group_lasso_penalty(self):
         return np.linalg.norm(self.W_, axis=1, ord=2).sum()
+
+    def fit(self, X, y=None):
+        self._validate_data(X)
+        self.groups_ = check_groups(self.groups, X.shape[1])  # Intercept to check that group forms a partition
+        return super().fit(X, y)
 
     def path(self, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9, restore_best_weights=True,
              early_stopping_factor=0.99, max_patience=10):
@@ -206,9 +214,10 @@ class SparseLinearMMD(SparseLinearModel):
         The maximum number of clusters to form as well as the number of output neurons in the neural network.
 
     groups: list of arrays of various shapes, default=None
-        if groups is set, it must describe a partition of the indices of variables. This will be used for performing
+        If groups is set, it must describe a partition of the indices of variables. This will be used for performing
         variable selection with groups of features considered to represent one variable. This option can typically be
-        used for one-hot-encoded variables.
+        used for one-hot-encoded variables. Variable indices that are not entered will be considered alone.
+        For example, with 3 features, accepted values can be [[0],[1],[2]], [[0,1],[2]] or [[0,1]].
         
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -260,6 +269,8 @@ class SparseLinearMMD(SparseLinearModel):
         The labels that were assigned to the samples passed to the :meth:`fit` method.
     n_iter_: int
         The number of iterations that the model took for converging.
+    groups_: list of lists of int or None
+        The explicit partition of the variables formed by the groups parameter if it was not None.
 
     References
     ----------
@@ -330,9 +341,10 @@ class SparseLinearMI(SparseLinearModel):
         The maximum number of clusters to form as well as the number of output neurons in the neural network.
 
     groups: list of arrays of various shapes, default=None
-        if groups is set, it must describe a partition of the indices of variables. This will be used for performing
+        If groups is set, it must describe a partition of the indices of variables. This will be used for performing
         variable selection with groups of features considered to represent one variable. This option can typically be
-        used for one-hot-encoded variables.
+        used for one-hot-encoded variables. Variable indices that are not entered will be considered alone.
+        For example, with 3 features, accepted values can be [[0],[1],[2]], [[0,1],[2]] or [[0,1]].
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -371,6 +383,8 @@ class SparseLinearMI(SparseLinearModel):
         The labels that were assigned to the samples passed to the :meth:`fit` method.
     n_iter_: int
         The number of iterations that the model took for converging.
+    groups_: list of lists of int or None
+        The explicit partition of the variables formed by the groups parameter if it was not None.
 
     References
     ----------
