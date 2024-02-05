@@ -71,11 +71,6 @@ class Douglas(DiscriminativeModel):
         The labels that were assigned to the samples passed to the :meth:`fit` method.
     n_iter_: int
         The number of iterations that the model took for converging.
-
-    References
-    -----------
-    DOUGLAS - End-to-end training of unsupervised trees
-        Louis Ohl, Pierre-Alexandre Mattei, Mickaël Leclercq, Arnaud Droit, Frederic Preciosio
     """
 
     _parameter_constraints: dict = {
