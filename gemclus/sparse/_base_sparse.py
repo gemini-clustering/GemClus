@@ -27,16 +27,19 @@ def check_groups(groups, n_features_in):
         return None
 
 
-def compute_val_score(clf, X, batch_size, gemini_objective):
+def compute_val_score(clf, X, y, batch_size, gemini_objective):
     validation_gemini = 0
     validation_l1 = clf._group_lasso_penalty() * clf.alpha
     selection_mask = np.arange(X.shape[1])
-    if clf.dynamic:
+    if clf.dynamic and y is not None:
         selection_mask = clf.get_selection()
     j = 0
     while j < len(X):
         X_batch = X[j:j + batch_size]
-        affinity = gemini_objective.compute_affinity(X_batch[:, selection_mask])
+        if y is not None:
+            affinity = y[j:j+batch_size][:,j:j+batch_size]
+        else:
+            affinity = gemini_objective.compute_affinity(X_batch[:, selection_mask])
         y_pred = clf.predict_proba(X_batch)
         validation_gemini += gemini_objective(y_pred, affinity) * len(X_batch)
         j += batch_size
@@ -44,7 +47,7 @@ def compute_val_score(clf, X, batch_size, gemini_objective):
     return validation_gemini, validation_l1
 
 
-def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
+def _path(clf, X, y=None, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
           early_stopping_factor=0.99, max_patience=10):
     if alpha_multiplier <= 1:
         warnings.warn(f"The alpha multiplier is lower or equal to 1. This will not increase alpha during the path. "
@@ -68,7 +71,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
 
     if clf.verbose:
         print("Starting initial training with alpha = 0")
-    clf.fit(X)
+    clf.fit(X, y)
 
     generator = check_random_state(clf.random_state)
     if clf.batch_size is not None:
@@ -77,14 +80,14 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
         batch_size = len(X)
 
     gemini_objective = clf.get_gemini()
-    best_gemini_score, _ = compute_val_score(clf, X, batch_size, gemini_objective)  # Best gemini score only when using all features
+    best_gemini_score, _ = compute_val_score(clf, X, y, batch_size, gemini_objective)  # Best gemini score only when using all features
     weights = clf._get_weights()
     best_weights = [w.copy() for w in weights]
 
     if clf.verbose:
         print(f"Finished initial training. GEMINI = {best_gemini_score}")
 
-    affinity = gemini_objective.compute_affinity(X)
+    affinity = gemini_objective.compute_affinity(X, y)
 
     alphas = []
     n_features = []
@@ -99,12 +102,12 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
         clf.alpha = alpha
 
         # Compute the validation scores at the beginning of this step of the path
-        validation_gemini_score, validation_l1 = compute_val_score(clf, X, batch_size, gemini_objective)
+        validation_gemini_score, validation_l1 = compute_val_score(clf, X, y, batch_size, gemini_objective)
 
         if clf.verbose:
             print(f"Starting new iteration with: alpha = {clf.alpha}. Validation score is {validation_gemini_score}")
 
-        if clf.dynamic:
+        if clf.dynamic and y is None:
             selection_mask = clf.get_selection()
             partial_data = X[:, selection_mask]
             affinity = gemini_objective.compute_affinity(partial_data)
@@ -120,7 +123,7 @@ def _path(clf, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9,
                 clf._update_weights(weights, grads)
 
             # Epoch control
-            iteration_gemini_score, iteration_l1 = compute_val_score(clf, X, batch_size, gemini_objective)
+            iteration_gemini_score, iteration_l1 = compute_val_score(clf, X, y, batch_size, gemini_objective)
 
             if iteration_gemini_score > (2 - early_stopping_factor) * validation_gemini_score \
                     or iteration_l1 < early_stopping_factor * validation_l1:

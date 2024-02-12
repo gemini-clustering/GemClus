@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from sklearn import metrics
 from sklearn.utils.extmath import softmax
 
 from ..gemini import *
@@ -117,3 +118,32 @@ def test_gradient_precision(objective, atol, fake_data_pred):
             fake_y_logits[i, k] -= epsilon
 
     assert np.allclose(y_grads, logit_grads, atol=atol), f"{y_grads, logit_grads}"
+
+def test_precomputed_kernel(fake_data_pred):
+    X, y_logits = fake_data_pred
+
+    kernel_params = {"degree":3, "gamma":2, "coef0":1}
+
+    precomputed_kernel = metrics.pairwise.polynomial_kernel(X, **kernel_params)
+
+    precomputed_objective = MMDGEMINI(kernel="precomputed")
+    precomputed_dummy_objective = MMDGEMINI(kernel="precomputed", kernel_params=kernel_params)
+
+    equivalent_objective = MMDGEMINI(kernel="polynomial", kernel_params=kernel_params)
+
+    assert np.all(precomputed_objective.compute_affinity(X, precomputed_kernel)==precomputed_dummy_objective.compute_affinity(X,precomputed_kernel))
+    assert np.all(equivalent_objective.compute_affinity(X)==precomputed_objective.compute_affinity(X,precomputed_kernel))
+    assert np.all(equivalent_objective.compute_affinity(X, precomputed_kernel)==precomputed_objective.compute_affinity(X,precomputed_kernel))
+
+def test_precomputed_metric(fake_data_pred):
+    X, y_logits = fake_data_pred
+
+    precomputed_distance = metrics.pairwise.euclidean_distances(X)
+
+    precomputed_objective = WassersteinGEMINI(metric="precomputed")
+
+    equivalent_objective = WassersteinGEMINI(metric="euclidean")
+
+    assert np.all(equivalent_objective.compute_affinity(X)==precomputed_objective.compute_affinity(X,precomputed_distance))
+    assert np.all(equivalent_objective.compute_affinity(X, precomputed_distance)==precomputed_objective.compute_affinity(X,precomputed_distance))
+

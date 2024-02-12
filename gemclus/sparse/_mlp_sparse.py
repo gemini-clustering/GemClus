@@ -207,7 +207,7 @@ class SparseMLPModel(MLPModel):
         self.groups_ = check_groups(self.groups, X.shape[1])  # Intercept to check that group forms a partition
         return super().fit(X, y)
 
-    def path(self, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9, restore_best_weights=True,
+    def path(self, X, y=None, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9, restore_best_weights=True,
              early_stopping_factor=0.99, max_patience=10):
         """
         Unfold the progressive geometric increase of the penalty weight starting from the initial alpha until
@@ -221,6 +221,9 @@ class SparseMLPModel(MLPModel):
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Test samples on which the feature reduction will be made.
+        y : ndarray of shape (n_samples, n_samples), default=None
+            Use this parameter to give a precomputed affinity metric if the option "precomputed" was passed during
+            construction. Otherwise, it is not used. This parameter is incompatible with the dynamic mode.
         alpha_multiplier : float, default=1.05
             The geometric increase of the group-lasso penalty at each-retraining. It must be greater than 1.
         min_features: int, default=2
@@ -252,7 +255,10 @@ class SparseMLPModel(MLPModel):
         n_features: list of float of length T
             The number of features that were selected at step t.
         """
-        best_weights, geminis, group_lasso_penalties, alphas, n_features = _path(self, X, alpha_multiplier,
+        if y is not None and self.dynamic:
+            warnings.warn("Dynamic mode is incompatible with a precomputed metric. Ignoring dynamic mode.")
+
+        best_weights, geminis, group_lasso_penalties, alphas, n_features = _path(self, X, y, alpha_multiplier,
                                                                                  min_features, keep_threshold,
                                                                                  early_stopping_factor, max_patience)
 
