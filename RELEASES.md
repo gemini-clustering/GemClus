@@ -1,6 +1,6 @@
 # History of changes
 
-# In development
+## In development
 
 + Adding the dynamic version of paths for feature selection in sparse models. A simply argument `dynamic=True` activates the dynamic mode.
 + Possibility of passing custom kernels and metrics to sparse models. This is not compatible with the dynamic mode.
