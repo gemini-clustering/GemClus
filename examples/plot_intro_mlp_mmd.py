@@ -3,7 +3,10 @@
 An introducing example to clustering with an MLP and the MMD GEMINI
 =====================================================================
 
-An example plot of :class:`gemclus.base_gemini.DenseMMDOvO`
+We show in this example how to use the `gemclus.mlp.MLPMMD` to fit
+a simple mixture of Gaussian distributions. The architecture here
+is a two-layer neural network trained with the MMD GEMINI, an
+objective equivalent to kernel KMeans.
 """
 
 from matplotlib import pyplot as plt

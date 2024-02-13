@@ -18,6 +18,8 @@ class MMDGEMINI(_GEMINI):
     The one-vs-all version compares the maximum mean discrepancy between a cluster distribution
     and the data distribution.
 
+    The one-vs-one objective is equivalent to a kernel KMeans objective.
+
     .. math::
         \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{MMD}_\kappa(p(x|y)\|p(x|y))]
 

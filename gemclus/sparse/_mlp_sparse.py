@@ -1,3 +1,4 @@
+import warnings
 from numbers import Real
 
 import numpy as np
@@ -6,7 +7,7 @@ from sklearn.neural_network._stochastic_optimizers import SGDOptimizer
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import softmax
 
-from ._base_sparse import _path
+from ._base_sparse import _path, check_groups
 from ._prox_grad import group_mlp_prox_grad, mlp_prox_grad
 from ..gemini import MMDGEMINI
 from ..mlp._mlp_geminis import MLPModel
@@ -28,8 +29,9 @@ class SparseMLPModel(MLPModel):
 
     groups: list of arrays of various shapes, default=None
         If groups is set, it must describe a partition of the indices of variables. This will be used for performing
-        variable selection with groups of features considered to represent one variables. This option can typically be
-        used for one-hot-encoded variables.
+        variable selection with groups of features considered to represent one variable. This option can typically be
+        used for one-hot-encoded variables. Variable indices that are not entered will be considered alone.
+        For example, with 3 features, accepted values can be [[0],[1],[2]], [[0,1],[2]] or [[0,1]].
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -39,6 +41,10 @@ class SparseMLPModel(MLPModel):
 
     n_hidden_dim: int, default=20
         The number of neurons in the hidden layer of the neural network.
+
+    dynamic: bool, default=False
+        Whether to run the path in dynamic mode or not. The dynamic mode consists of affinities computed using
+        only the subset of selected variables instead of all variables.
 
     solver: {'sgd','adam'}, default='adam'
         The solver for weight optimisation.
@@ -82,6 +88,8 @@ class SparseMLPModel(MLPModel):
         The number of iterations that the model took for converging.
     H_: ndarray of shape (n_samples, n_hidden_dim)
         The hidden representation of the samples after fitting.
+    groups_: list of lists of int or None
+        The explicit partition of the variables formed by the groups parameter if it was not None.
 
     References
     ----------
@@ -103,10 +111,11 @@ class SparseMLPModel(MLPModel):
         **MLPModel._parameter_constraints,
         "M": [Interval(Real, 0, np.inf, closed="left")],
         "alpha": [Interval(Real, 0, np.inf, closed="left")],
+        "dynamic": [bool]
     }
 
     def __init__(self, n_clusters=3, gemini="mmd_ova", groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20,
-                 M=10, alpha=1e-2, solver="adam", batch_size=None, verbose=False, random_state=None):
+                 M=10, alpha=1e-2, dynamic=False, solver="adam", batch_size=None, verbose=False, random_state=None):
         super().__init__(
             n_clusters=n_clusters,
             gemini=gemini,
@@ -121,6 +130,7 @@ class SparseMLPModel(MLPModel):
         self.M = M
         self.alpha = alpha
         self.groups = groups
+        self.dynamic = dynamic
 
     def _init_params(self, random_state, X=None):
         super()._init_params(random_state, X)
@@ -165,11 +175,11 @@ class SparseMLPModel(MLPModel):
 
         # Then statisfy the sparsity constraint of the MLP by
         # evaluating the proximal gradient
-        if self.groups is None:
+        if self.groups_ is None:
             new_W_skip, new_W1 = mlp_prox_grad(self.W_skip_, self.W1_, self.alpha * self.optimiser_.learning_rate,
                                                self.M)
         else:
-            new_W_skip, new_W1 = group_mlp_prox_grad(self.groups, self.W_skip_, self.W1_,
+            new_W_skip, new_W1 = group_mlp_prox_grad(self.groups_, self.W_skip_, self.W1_,
                                                      self.alpha * self.optimiser_.learning_rate, self.M)
 
         np.copyto(self.W_skip_, new_W_skip)
@@ -192,7 +202,12 @@ class SparseMLPModel(MLPModel):
     def _group_lasso_penalty(self):
         return np.linalg.norm(self.W_skip_, axis=1, ord=2).sum()
 
-    def path(self, X, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9, restore_best_weights=True,
+    def fit(self, X, y=None):
+        self._validate_data(X)
+        self.groups_ = check_groups(self.groups, X.shape[1])  # Intercept to check that group forms a partition
+        return super().fit(X, y)
+
+    def path(self, X, y=None, alpha_multiplier=1.05, min_features=2, keep_threshold=0.9, restore_best_weights=True,
              early_stopping_factor=0.99, max_patience=10):
         """
         Unfold the progressive geometric increase of the penalty weight starting from the initial alpha until
@@ -206,6 +221,9 @@ class SparseMLPModel(MLPModel):
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Test samples on which the feature reduction will be made.
+        y : ndarray of shape (n_samples, n_samples), default=None
+            Use this parameter to give a precomputed affinity metric if the option "precomputed" was passed during
+            construction. Otherwise, it is not used. This parameter is incompatible with the dynamic mode.
         alpha_multiplier : float, default=1.05
             The geometric increase of the group-lasso penalty at each-retraining. It must be greater than 1.
         min_features: int, default=2
@@ -215,7 +233,8 @@ class SparseMLPModel(MLPModel):
             best.
         restore_best_weights: bool, default=True
             After performing the path, the best weights offering simultaneously good GEMINI score and few features
-            are restored to the model.
+            are restored to the model. If the model is set to `dynamic=True`, then this option will be ignored because
+            of the incomparable nature of GEMINIs when the number of selected variables change.
         early_stopping_factor: float, default=0.99
             The percentage factor beyond which upgrades of the GEMINI or the group-lasso penalty are considered
             too small for early stopping.
@@ -236,18 +255,25 @@ class SparseMLPModel(MLPModel):
         n_features: list of float of length T
             The number of features that were selected at step t.
         """
-        best_weights, geminis, group_lasso_penalties, alphas, n_features = _path(self, X, alpha_multiplier,
+        if y is not None and self.dynamic:
+            warnings.warn("Dynamic mode is incompatible with a precomputed metric. Ignoring dynamic mode.")
+
+        best_weights, geminis, group_lasso_penalties, alphas, n_features = _path(self, X, y, alpha_multiplier,
                                                                                  min_features, keep_threshold,
                                                                                  early_stopping_factor, max_patience)
 
         if restore_best_weights:
-            if self.verbose:
-                print("Restoring best weights")
-            np.copyto(self.W1_, best_weights[0])
-            np.copyto(self.W2_, best_weights[1])
-            np.copyto(self.W_skip_, best_weights[2])
-            np.copyto(self.b1_, best_weights[3])
-            np.copyto(self.b2_, best_weights[4])
+            if not self.dynamic:
+                if self.verbose:
+                    print("Restoring best weights")
+                np.copyto(self.W1_, best_weights[0])
+                np.copyto(self.W2_, best_weights[1])
+                np.copyto(self.W_skip_, best_weights[2])
+                np.copyto(self.b1_, best_weights[3])
+                np.copyto(self.b2_, best_weights[4])
+            else:
+                warnings.warn("The option restore_best_weights is incompatible with the dynamic mode. The final model "
+                              "of the path will be kept.")
 
         return best_weights, geminis, group_lasso_penalties, alphas, n_features
 
@@ -267,9 +293,10 @@ class SparseMLPMMD(SparseMLPModel):
         The maximum number of clusters to form as well as the number of output neurons in the neural network.
 
     groups: list of arrays of various shapes, default=None
-        if groups is set, it must describe a partition of the indices of variables. This will be used for performing
-        variable selection with groups of features considered to represent one variables. This option can typically be
-        used for one-hot-encoded variables.
+        If groups is set, it must describe a partition of the indices of variables. This will be used for performing
+        variable selection with groups of features considered to represent one variable. This option can typically be
+        used for one-hot-encoded variables. Variable indices that are not entered will be considered alone.
+        For example, with 3 features, accepted values can be [[0],[1],[2]], [[0,1],[2]] or [[0,1]].
 
     max_iter: int, default=1000
         Maximum number of epochs to perform gradient descent in a single run.
@@ -302,6 +329,10 @@ class SparseMLPMMD(SparseMLPModel):
     M: float, default=10 The hierarchy coefficient that controls the relative strength between the group-lasso
         penalty of the skip connection and the sparsity of the first layer of the MLP.
 
+    dynamic: bool, default=False
+        Whether to run the path in dynamic mode or not. The dynamic mode consists of affinities computed using
+        only the subset of selected variables instead of all variables.
+
     batch_size: int, default=None
         The size of batches during gradient descent training. If set to None, the whole data will be considered.
 
@@ -332,6 +363,8 @@ class SparseMLPMMD(SparseMLPModel):
         The number of iterations that the model took for converging.
     H_: ndarray of shape (n_samples, n_hidden_dim)
         The hidden representation of the samples after fitting.
+    groups_: list of lists of int or None
+        The explicit partition of the variables formed by the groups parameter if it was not None.
 
     References
     ----------
@@ -371,8 +404,8 @@ class SparseMLPMMD(SparseMLPModel):
     }
 
     def __init__(self, n_clusters=3, groups=None, max_iter=1000, learning_rate=1e-3, n_hidden_dim=20, kernel="linear",
-                 M=10, batch_size=None, alpha=1e-2, ovo=False, solver="adam", verbose=False, random_state=None,
-                 kernel_params=None):
+                 M=10, batch_size=None, alpha=1e-2, ovo=False, dynamic=False, solver="adam", verbose=False,
+                 random_state=None, kernel_params=None):
         super().__init__(
             n_clusters=n_clusters,
             gemini=None,
@@ -380,6 +413,7 @@ class SparseMLPMMD(SparseMLPModel):
             max_iter=max_iter,
             learning_rate=learning_rate,
             n_hidden_dim=n_hidden_dim,
+            dynamic=dynamic,
             solver=solver,
             batch_size=batch_size,
             verbose=verbose,

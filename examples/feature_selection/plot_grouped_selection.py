@@ -45,8 +45,8 @@ y = np.repeat(np.arange(2), 50)
 
 # Finally, write out the partition of the dataset
 groups = [np.arange(4), np.arange(4, 7)]
-for i in range(8):
-    groups += [np.array([i + 7])]
+# for i in range(8):
+#     groups += [np.array([i + 7])]
 
 print(groups, X.shape)
 

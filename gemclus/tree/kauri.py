@@ -129,11 +129,6 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
         The cluster in which each sample of the data was put
     tree_: Tree instance
         The underlying Tree object. Please refer to `help(sklearn.tree._tree.Tree)` for attributes of Tree object.
-
-    References
-    ----------
-    KAURI - End-to-end training of unsupervised trees
-        Louis Ohl, Pierre-Alexandre Mattei, Mickaël Leclercq, Arnaud Droit, Frederic Preciosio
     """
     _parameter_constraints: dict = {
         "max_clusters": [Interval(Integral, 1, None, closed="left")],

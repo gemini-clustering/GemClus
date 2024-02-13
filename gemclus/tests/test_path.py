@@ -2,9 +2,11 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_blobs
 
+import gemclus.gemini
 from ..sparse import SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel
 
 sparse_models = [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel]
+
 
 @pytest.fixture
 def data():
@@ -153,3 +155,109 @@ def test_batch_path(clf_class, data):
     clf = clf_class(batch_size=50, random_state=0, max_iter=100)
 
     clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 1)
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [[np.array([0]), np.array([1, 2])], [[0], [1, 2]], [np.array([i]) for i in range(10)], [[i] for i in range(10)]]
+)
+@pytest.mark.parametrize(
+    "clf_class",
+    sparse_models
+)
+def test_good_groups(clf_class, groups, data):
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, groups=groups)
+    clf.path(data, restore_best_weights=False, min_features=data.shape[1])
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [[[-1]], [[0], [0]], [[0], [0, 1]], [[10]], [[0, 0], [2, 3, 4, 5, 6, 7, 8, 9]]]
+)
+@pytest.mark.parametrize(
+    "clf_class",
+    sparse_models
+)
+def test_bad_groups(clf_class, groups, data):
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, groups=groups)
+    try:
+        clf.path(data, restore_best_weights=False, min_features=data.shape[1])
+    except AssertionError as error:
+        print(error)
+    else:
+        assert False
+
+
+@pytest.mark.parametrize(
+    "clf_class",
+    [SparseMLPMMD, SparseLinearMMD, SparseLinearModel, SparseMLPModel]
+)
+def test_dynamic(clf_class, data):
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, dynamic=True)
+
+    clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 3)
+
+    print(clf.get_selection())
+
+    assert clf.dynamic
+
+
+@pytest.mark.parametrize(
+    "clf_class",
+    [SparseMLPMMD, SparseLinearMMD]
+)
+def test_custom_metric_mmd(clf_class, data):
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, kernel="precomputed")
+
+    pre_computed_affinity = data @ data.T + 1  # Custom polynomial kernel
+
+    path_res_1 = clf.path(data, pre_computed_affinity, restore_best_weights=False, min_features=data.shape[1] - 3)
+
+    # Now, perform the same path using the integrated kernel
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, kernel="polynomial",
+                    kernel_params={"gamma": 1, "coef0": 1, "degree": 1})
+    path_res_2 = clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 3)
+
+    best_weights_1, geminis_1, group_penalties_1, alphas_1, n_features_1 = path_res_1
+    best_weights_2, geminis_2, group_penalties_2, alphas_2, n_features_2 = path_res_2
+
+    for a, b in zip(best_weights_1, best_weights_2):
+        assert np.all(a == b)
+
+    assert np.all(np.array(geminis_1) == np.array(geminis_2))
+    assert np.all(np.array(group_penalties_1) == np.array(group_penalties_2))
+    assert np.all(np.array(alphas_1) == np.array(alphas_2))
+    assert np.all(np.array(n_features_1) == np.array(n_features_2))
+
+
+@pytest.mark.parametrize(
+    "clf_class",
+    [SparseMLPModel, SparseLinearModel]
+)
+def test_custom_metric_generic(clf_class, data):
+    gemini = gemclus.gemini.MMDGEMINI(kernel="precomputed", ovo=False)
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, gemini=gemini)
+
+    pre_computed_affinity = data @ data.T + 1  # Custom polynomial kernel
+
+    path_res_1 = clf.path(data, pre_computed_affinity, restore_best_weights=False, min_features=data.shape[1] - 3)
+
+    # Now, perform the same path using the integrated kernel
+    gemini = gemclus.gemini.MMDGEMINI(kernel="polynomial", ovo=False,
+                                      kernel_params={"gamma": 1, "coef0": 1, "degree": 1})
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, gemini=gemini)
+    path_res_2 = clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 3)
+
+    best_weights_1, geminis_1, group_penalties_1, alphas_1, n_features_1 = path_res_1
+    best_weights_2, geminis_2, group_penalties_2, alphas_2, n_features_2 = path_res_2
+
+    for a, b in zip(best_weights_1, best_weights_2):
+        assert np.all(a == b)
+
+    assert np.all(np.array(geminis_1) == np.array(geminis_2))
+    assert np.all(np.array(group_penalties_1) == np.array(group_penalties_2))
+    assert np.all(np.array(alphas_1) == np.array(alphas_2))
+    assert np.all(np.array(n_features_1) == np.array(n_features_2))
+
+    # FIX: ensure same results as with the real kernel
+    # Fix: ensure warning with dynamic regim

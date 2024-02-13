@@ -1,33 +1,37 @@
 """
-==========================
-Non parametric clustering
-==========================
+====================================
+Kernel KMeans clustering with GEMINI
+====================================
 
-This example illustrates how we can run nonparametric clustering using GEMINI.
-The specificity of this model is that the decision of model is not dependent on the position of the inputs, but
-only on the parameters associated to the input. Consequently, this model cannot be used for unseen samples as
-it will always return the same predictions.
+Since the MMD GEMINI objective is equivalent in OvO mode to a kernel KMeans objective, we can use it
+with the nonparametric model that directly associates a cluster to each sample. The overall model
+would thus behave as a kernel KMeans algorithm. However, its training is done by gradient descent.
 """
 
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn import metrics
+from sklearn import metrics, datasets
 
-from gemclus import data
 from gemclus.nonparametric import CategoricalMMD
 
 ###########################################################################
-# Draw samples from a GMM
+# Draw samples from a circular dataset
 # --------------------------------------------------------------
 
 # %%data
 
-# Generate samples on that are simple to separate
-N = 100  # Number of nodes in the graph
-# GMM parameters
-means = np.array([[1, -1], [1, 1], [-1, -1], [-1, 1]])*2
-covariances = [np.eye(2)*0.5]*4
-X, y = data.draw_gmm(N, means, covariances, np.ones(4) / 4, random_state=1789)
+# We start by generating samples distributed on two circles
+X, y = datasets.make_circles(n_samples=200, noise=0.05, factor=0.05, random_state=0)
+
+# then normalise the data
+X = (X - np.mean(X, 0)) / np.std(X, ddof=0)
+
+# Have a look at it
+plt.scatter(X[:, 0], X[:, 1], c=y)
+plt.axis("off")
+plt.ylim((-3, 3))
+plt.ylim((-3, 3))
+plt.show()
 
 ###########################################################################
 # Train the model
@@ -37,7 +41,7 @@ X, y = data.draw_gmm(N, means, covariances, np.ones(4) / 4, random_state=1789)
 
 # %%training
 
-model = CategoricalMMD(n_clusters=4, ovo=True, random_state=0, learning_rate=1e-2)
+model = CategoricalMMD(n_clusters=2, random_state=0, kernel="rbf")
 y_pred = model.fit_predict(X)
 
 ##########################################################################
