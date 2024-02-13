@@ -1,3 +1,4 @@
+import warnings
 from abc import ABC
 from numbers import Real
 
@@ -446,6 +447,85 @@ class RIM(LinearModel):
 
 
 class KernelRIM(LinearModel):
+    """ Implementation of the maximisation of the classical mutual information using a kernelised version of the
+        logistic regression with an :math:`\ell_2` penalty on the weights. This implementation follows the framework
+        described by Krause et al. in the RIM paper. Contrary to the RIM model, the KernelRIM model cannot be applied
+        to unseen data.
+
+        Parameters
+        ----------
+        n_clusters : int, default=3
+            The maximum number of clusters to form as well as the number of output neurons in the neural network.
+
+        max_iter: int, default=1000
+            Maximum number of epochs to perform gradient descent in a single run.
+
+        learning_rate: float, default=1e-3
+            Initial learning rate used. It controls the step-size in updating the weights.
+
+        reg: float, default=0.1
+            Regularisation hyperparameter for the $\ell_2$ weight penalty.
+
+        solver: {'sgd','adam'}, default='adam'
+            The solver for weight optimisation.
+
+            - 'sgd' refers to stochastic gradient descent.
+            - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
+
+        verbose: bool, default=False
+            Whether to print progress messages to stdout
+
+        random_state: int, RandomState instance, default=None
+            Determines random number generation for weights and bias initialisation.
+            Pass an int for reproducible results across multiple function calls.
+
+        base_kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
+        default='linear'
+            The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
+            Currently, all kernel parameters are the default ones.
+            If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `y` of
+            `fit`, `fit_predict` and/or `score`.
+
+        base_kernel_params: dict, default=None
+            A dictionary of keyword arguments to pass to the chosen kernel function.
+
+        Attributes
+        ----------
+        W_: ndarray of shape (n_samples, n_clusters)
+            The linear weights of model for each kernelised sample
+        b_: ndarray of shape (1, n_clusters)
+            The biases of the model
+        optimiser_: `AdamOptimizer` or `SGDOptimizer`
+            The optimisation algorithm used for training depending on the chosen solver parameter.
+        labels_: ndarray of shape (n_samples)
+            The labels that were assigned to the samples passed to the :meth:`fit` method.
+        n_iter_: int
+            The number of iterations that the model took for converging.
+
+        References
+        ----------
+        RIM - Discriminative Clustering by Regularized Information Maximization
+            Ryan Gomes, Andreas Krause, Pietro Perona. 2010.
+
+        See Also
+        --------
+        LinearModel: logistic regression trained for clustering with any GEMINI
+        LinearWasserstein: logistic regression trained for clustering with the Wasserstein GEMINI
+        LinearMMD: logistic regression trained for clustering with the MMD GEMINI
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_iris
+        >>> from gemclus.linear import RIM
+        >>> X,y=load_iris(return_X_y=True)
+        >>> clf = RIM(random_state=0).fit(X)
+        >>> clf.predict(X[:2,:])
+        array([0, 0])
+        >>> clf.predict_proba(X[:2,:]).shape
+        (2, 3)
+        >>> clf.score(X)
+        0.43904857546947995
+        """
     _parameter_constraints: dict = {
         **LinearModel._parameter_constraints,
         "reg": [Interval(Real, 0, None, closed="left")]
@@ -453,7 +533,7 @@ class KernelRIM(LinearModel):
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, reg=1e-1,
                  solver="adam", verbose=False, random_state=None,
-                 base_kernel="linear", base_kernel_kwds=None):
+                 base_kernel="linear", base_kernel_params=None):
         super().__init__(
             n_clusters=n_clusters,
             gemini="mi",
@@ -466,11 +546,11 @@ class KernelRIM(LinearModel):
         )
         self.reg = reg
         self.base_kernel = base_kernel
-        self.base_kernel_kwds = base_kernel_kwds
+        self.base_kernel_params = base_kernel_params
 
     def fit(self, X, y=None):
         # We start by computing the kernel on X
-        kwds = dict() if self.base_kernel_kwds is None else self.base_kernel_kwds
+        kwds = dict() if self.base_kernel_params is None else self.base_kernel_params
         kernel = pairwise_kernels(X, metric=self.base_kernel, **kwds)
         # Then, we fit as usual, but use the kernel as input
         self.input_kernel_ = kernel
@@ -481,15 +561,32 @@ class KernelRIM(LinearModel):
 
         return self
 
-    def _update_weights(self, weights, gradients):
+    def _compute_grads(self, X, y_pred, gradient):
         # Use the already defined linear model gradients
+        gradients = super()._compute_grads(X, y_pred, gradient)
+
+        # Then, add the regularisation grads
         gradients[0] += 2 * self.reg * np.dot(self.input_kernel_, self.W_)
 
-        self.optimiser_.update_params(weights, gradients)
+        return gradients
 
     def predict_proba(self, X):
+        """
+        Probability estimates that are the output of the neural network p(y|x). Note that the probabilities
+        only concern the data that was kernelised during the call to the fit method.
 
+        Parameters
+        ----------
+        X : unused, here for consistency
+
+        Returns
+        -------
+        T : array-like of shape (n_samples, n_clusters)
+            Returns the probability of the sample for each cluster in the model.
+        """
         # Check is fit had been called
         check_is_fitted(self)
+
+        warnings.warn("Predictions only concern the data that was passed to the fit method.")
 
         return self._infer(self.input_kernel_, retain=False)

@@ -1,6 +1,6 @@
 import pytest
 from sklearn.datasets import load_iris
-from sklearn.utils.estimator_checks import check_estimator
+from sklearn.utils.estimator_checks import check_estimator, check_fit2d_predict1d
 from sklearn.utils.estimator_checks import check_clustering, check_methods_sample_order_invariance, \
     check_methods_subset_invariance
 
@@ -134,7 +134,7 @@ def test_all_estimators(clf):
                 and "Categorical" in type(estimator).__name__:
             continue
         if "KernelRIM" == type(estimator).__name__:
-            if check.func in [check_methods_sample_order_invariance, check_methods_subset_invariance]:
+            if check.func in [check_methods_sample_order_invariance, check_methods_subset_invariance, check_fit2d_predict1d]:
                 continue
         check(clf)
 
