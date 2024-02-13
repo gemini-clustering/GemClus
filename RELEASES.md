@@ -2,6 +2,9 @@
 
 # In development
 
++ Adding the dynamic version of paths for feature selection in sparse models. A simply argument `dynamic=True` activates the dynamic mode.
++ Possibility of passing custom kernels and metrics to sparse models. This is not compatible with the dynamic mode.
++ No need to specify any longer the full partition of the features in the `groups` arguments of the sparse models
 + New GEMINIs: `HellingerGEMINI`, `TVGEMINI` and `KLGEMINI`
 + Introducing generic models that can be combined with any GEMINI
   + `gemclus.linear.LinearModel`, `gemclus.mlp.MLPModel`, `gemclus.nonparametric.CategoricalModel`,
