@@ -31,7 +31,7 @@ def compute_val_score(clf, X, y, batch_size, gemini_objective):
     validation_gemini = 0
     validation_l1 = clf._group_lasso_penalty() * clf.alpha
     selection_mask = np.arange(X.shape[1])
-    if clf.dynamic and y is not None:
+    if clf.dynamic and y is None:
         selection_mask = clf.get_selection()
     j = 0
     while j < len(X):
