@@ -1,0 +1,51 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - 'main'    
+  push:
+    branches:
+      - 'main'  
+  create:
+    branches:
+      - 'main'
+    tags:
+      - '**'
+
+jobs:
+  linux:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Python and package
+      run: |
+        pip install -e .
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov coverage
+    - name: Run tests
+      run: |
+        coverage run -m pytest gemclus/ -vv
+        coverage report -m
+        coverage xml
+    - name: Upload coverage reports to Codecov with GitHub Action
+      uses: codecov/codecov-action@v4
+      if: always()
+      continue-on-error: true
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: gemini-clustering/GemClus
+        file: coverage.xml
+        verbose: true
