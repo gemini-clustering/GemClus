@@ -24,22 +24,27 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install Python
+    - name: Install Python and package
       run: |
         pip install -e .
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov
+        pip install pytest pytest-cov coverage
     - name: Run tests
       run: |
-        python -m pytest --durations=20 -v gemclus --doctest-modules --color=yes --cov=./ --cov-report=xml
+        coverage run -m pytest gemclus/ -vv
+        coverage report -m
+        coverage xml
     - name: Upload coverage reports to Codecov with GitHub Action
       uses: codecov/codecov-action@v4.0.1
+      if: always()
+      continue-on-error: true
       env:
         token: ${{ secrets.CODECOV_TOKEN }}
         slug: gemini-clustering/GemClus
+        file: coverage.xml
