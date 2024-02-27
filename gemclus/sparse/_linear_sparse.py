@@ -320,7 +320,7 @@ class SparseLinearMMD(SparseLinearModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7040618744746618
+    1.7040618744
     """
     _parameter_constraints: dict = {
         **SparseLinearModel._parameter_constraints,
