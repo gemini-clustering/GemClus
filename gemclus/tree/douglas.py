@@ -139,8 +139,8 @@ class Douglas(DiscriminativeModel):
             self.cut_points_list_ = [(i, random_state.normal(size=(self.n_cuts,))) for i in range(X.shape[1])]
             num_leaf = int((self.n_cuts + 1) ** X.shape[1])
         else:
-            assert len(self.feature_mask) == X.shape[1], ("The boolean feature mask must have as "
-                                                          "much entries as the number of features")
+            if len(self.feature_mask) != X.shape[1]:
+                raise ValueError("The boolean feature mask must have as much entries as the number of features")
             self.cut_points_list_ = [(i, random_state.normal(size=self.n_cuts, )) for i in range(X.shape[1])
                                      if self.feature_mask[i]]
             num_leaf = int((self.n_cuts + 1) ** len(self.cut_points_list_))
@@ -214,8 +214,9 @@ class Douglas(DiscriminativeModel):
         check_is_fitted(self)
         X = check_array(X)
 
-        assert X.shape[1] >= len(self.cut_points_list_), ("The passed data has fewer features than the number of"
-                                                          "cut points expected for the Douglas model")
+        if X.shape[1] < len(self.cut_points_list_):
+            raise ValueError("The passed data has fewer features than the number of cut points expected for the "
+                             "Douglas model")
         active_points = []
 
         for (feature_index, cut_points) in self.cut_points_list_:

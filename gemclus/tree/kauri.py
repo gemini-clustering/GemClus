@@ -60,7 +60,8 @@ class Tree:
         return self.n_nodes
 
     def predict(self, X, node=0):
-        assert 0 <= node <= self.n_nodes, f"Cannot explore tree from unexisting node {node}"
+        if node < 0 or node > self.n_nodes:
+            raise ValueError(f"Cannot explore tree from unexisting node {node}")
         if self.children_left[node] == -1:
             return self.target[node] * np.ones(len(X), dtype=np.int64)
         else:
@@ -193,9 +194,9 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
         random_state = check_random_state(self.random_state)
 
         # Check that all variables follow some logical constraints
-        assert self.min_samples_leaf * 2 <= self.min_samples_split, (f"Contradiction between the number of samples "
-                                                                     f"required to consider a split and the number of"
-                                                                     f" samples needed to create a leaf")
+        if self.min_samples_leaf * 2 > self.min_samples_split:
+            raise ValueError("Contradiction between the number of samples required to consider a split and the "
+                             "number of samples needed to create a leaf")
 
         if self.verbose:
             print("Initialising variables")
@@ -395,12 +396,13 @@ def print_kauri_tree(kauri_tree, feature_names=None):
     feature_names: array of shape (n_features,) or None
         The name to use to describe the features. If set to None, a default print "X[:,i]" is proposed.
     """
-    assert isinstance(kauri_tree, Kauri), f"The passed instance is not a KauriTree, got: {kauri_tree.__class__}"
+    if not isinstance(kauri_tree, Kauri):
+        raise ValueError(f"The passed instance is not a KauriTree, got: {kauri_tree.__class__}")
     check_is_fitted(kauri_tree)
     if feature_names is not None:
         used_features = [x for x in kauri_tree.tree_.features if x is not None]
-        assert len(feature_names) >= len(np.unique(used_features)), ("Fewer feature names than used "
-                                                                     "features by the tree were provided")
+        if len(feature_names) < len(np.unique(used_features)):
+            raise ValueError("Fewer feature names than used features by the tree were provided")
 
     def print_node(node_id):
         current_depth = kauri_tree.tree_.depths[node_id]
