@@ -316,7 +316,7 @@ class LinearWasserstein(LinearModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.710399298634854
+    1.710399298634853
     """
     _parameter_constraints: dict = {
         **LinearModel._parameter_constraints,

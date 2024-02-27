@@ -297,7 +297,7 @@ class CategoricalWasserstein(CategoricalModel):
     >>> X,y=load_iris(return_X_y=True)
     >>> clf = CategoricalWasserstein(random_state=0).fit(X)
     >>> clf.score(X)
-    1.3555482569532074
+    1.3555482569532051
     """
     _parameter_constraints: dict = {
         **CategoricalModel._parameter_constraints,

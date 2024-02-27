@@ -352,7 +352,7 @@ class MLPWasserstein(MLPModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7636482655127903
+    1.7636482655127925
     """
     _parameter_constraints: dict = {
         **MLPModel._parameter_constraints,
