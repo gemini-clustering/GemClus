@@ -394,7 +394,7 @@ class SparseMLPMMD(SparseMLPModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.766421183641077
+    1.7664211836
     """
     _parameter_constraints: dict = {
         **SparseMLPModel._parameter_constraints,

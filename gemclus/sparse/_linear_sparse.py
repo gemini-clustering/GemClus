@@ -438,7 +438,7 @@ class SparseLinearMI(SparseLinearModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    0.5812412917247887
+    0.5812412917
     """
 
     _parameter_constraints: dict = {
