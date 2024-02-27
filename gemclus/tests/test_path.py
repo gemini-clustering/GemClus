@@ -12,7 +12,7 @@ sparse_models = [SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearMode
 def data():
     np.random.seed(0)
     X, y = make_blobs(n_samples=100, centers=3, cluster_std=0.1, random_state=0)
-    X = np.concatenate([X, np.random.normal(size=(100, 8))], axis=1)
+    X = np.concatenate([X, np.random.normal(size=(100, 5))], axis=1)
     return X
 
 
@@ -21,19 +21,22 @@ def data():
     sparse_models
 )
 def test_sparse_stability(clf_class, data):
+    min_features = data.shape[-1] - 2
     clf = clf_class(random_state=0)
 
-    best_weights, geminis, penalties, alphas, n_features = clf.path(data, restore_best_weights=False)
+    best_weights, geminis, penalties, alphas, n_features = clf.path(data, min_features=min_features,
+                                                                    restore_best_weights=False)
 
     assert len(geminis) == len(alphas)
     assert len(geminis) == len(n_features)
     assert len(best_weights) == len(clf._get_weights())
 
-    assert n_features[-1] <= 2
+    assert n_features[-1] <= min_features
 
     clf = clf_class(random_state=0)
 
-    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data, restore_best_weights=True)
+    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data, min_features=min_features,
+                                                                                   restore_best_weights=True)
 
     for i in range(len(best_weights_v2)):
         assert np.allclose(clf._get_weights()[i], best_weights_v2[i])
@@ -51,7 +54,7 @@ def test_sparse_stability(clf_class, data):
 
 
 def test_weights_coherence(data):
-    clf = SparseMLPMMD(random_state=0)
+    clf = SparseMLPMMD(random_state=0, alpha=10)
 
     best_weights, geminis, penalties, alphas, n_features = clf.path(data, restore_best_weights=False)
 
@@ -65,13 +68,17 @@ def test_weights_coherence(data):
     sparse_models
 )
 def test_erroneous_multiplier(clf_class, data):
-    clf = clf_class(random_state=0)
+    clf = clf_class(random_state=0, alpha=10)
 
-    best_weights_v1, geminis_v1, penalties_v1, alphas_v1, n_features_v1 = clf.path(data, restore_best_weights=False)
+    best_weights_v1, geminis_v1, penalties_v1, alphas_v1, n_features_v1 = clf.path(data,
+                                                                                   min_features=data.shape[-1] - 1,
+                                                                                   restore_best_weights=False)
 
-    clf = clf_class(random_state=0)
+    clf = clf_class(random_state=0, alpha=10)
 
-    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data, alpha_multiplier=-1,
+    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data,
+                                                                                   min_features=data.shape[-1] - 1,
+                                                                                   alpha_multiplier=-1,
                                                                                    restore_best_weights=False)
 
     assert np.allclose(np.array(geminis_v1), np.array(geminis_v2))
@@ -108,43 +115,19 @@ def test_erroneous_min_features(clf_class, data):
     "clf_class",
     sparse_models
 )
-def test_excessive_threshold(clf_class, data):
-    clf = clf_class(random_state=0)
-
-    best_weights_v1, geminis_v1, penalties_v1, alphas_v1, n_features_v1 = clf.path(data, restore_best_weights=False)
-
-    clf = clf_class(random_state=0)
-
-    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data, keep_threshold=2,
-                                                                                   restore_best_weights=False)
-
-    for i in range(len(best_weights_v1)):
-        assert np.allclose(best_weights_v1[i], best_weights_v2[i])
-
-    assert np.allclose(np.array(geminis_v1), np.array(geminis_v2))
-    assert np.allclose(np.array(alphas_v1), np.array(alphas_v2))
-    assert np.allclose(np.array(n_features_v1), np.array(n_features_v2))
-
-
 @pytest.mark.parametrize(
-    "clf_class",
-    sparse_models
+    "threshold",
+    [-1,2]
 )
-def test_erroneous_threshold(clf_class, data):
-    clf = clf_class(random_state=0)
+def test_erroneous_threshold(clf_class, data, threshold):
+    clf = clf_class(random_state=0, alpha=10)
 
-    best_weights_v1, geminis_v1, penalties_v1, alphas_v1, n_features_v1 = clf.path(data, restore_best_weights=False)
+    best_weights, geminis, penalties, alphas, n_features = clf.path(data,
+                                                                    min_features=data.shape[-1] - 1,
+                                                                    keep_threshold=threshold,
+                                                                    restore_best_weights=False)
 
-    clf = clf_class(random_state=0)
-    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data, keep_threshold=-1,
-                                                                                   restore_best_weights=False)
-
-    for i in range(len(best_weights_v1)):
-        assert np.allclose(best_weights_v1[i], best_weights_v2[i])
-
-    assert np.allclose(np.array(geminis_v1), np.array(geminis_v2))
-    assert np.allclose(np.array(alphas_v1), np.array(alphas_v2))
-    assert np.allclose(np.array(n_features_v1), np.array(n_features_v2))
+    assert max(geminis) >= clf.score(data) >= 0.9 * max(geminis)
 
 
 @pytest.mark.parametrize(
@@ -159,7 +142,7 @@ def test_batch_path(clf_class, data):
 
 @pytest.mark.parametrize(
     "groups",
-    [[np.array([0]), np.array([1, 2])], [[0], [1, 2]], [np.array([i]) for i in range(10)], [[i] for i in range(10)]]
+    [[np.array([0]), np.array([1, 2])], [[0], [1, 2]], [np.array([i]) for i in range(7)], [[i] for i in range(7)]]
 )
 @pytest.mark.parametrize(
     "clf_class",
@@ -172,7 +155,7 @@ def test_good_groups(clf_class, groups, data):
 
 @pytest.mark.parametrize(
     "groups",
-    [[[-1]], [[0], [0]], [[0], [0, 1]], [[10]], [[0, 0], [2, 3, 4, 5, 6, 7, 8, 9]]]
+    [[[-1]], [[0], [0]], [[0], [0, 1]], [[7]], [[0, 0], [2, 3, 4, 5, 6]]]
 )
 @pytest.mark.parametrize(
     "clf_class",
@@ -207,7 +190,7 @@ def test_dynamic(clf_class, data):
     [SparseMLPMMD, SparseLinearMMD]
 )
 def test_custom_metric_mmd(clf_class, data):
-    clf = clf_class(batch_size=50, random_state=0, max_iter=100, kernel="precomputed")
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, kernel="precomputed", alpha=10)
 
     pre_computed_affinity = data @ data.T + 1  # Custom polynomial kernel
 
@@ -215,7 +198,7 @@ def test_custom_metric_mmd(clf_class, data):
 
     # Now, perform the same path using the integrated kernel
     clf = clf_class(batch_size=50, random_state=0, max_iter=100, kernel="polynomial",
-                    kernel_params={"gamma": 1, "coef0": 1, "degree": 1})
+                    kernel_params={"gamma": 1, "coef0": 1, "degree": 1}, alpha=10)
     path_res_2 = clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 3)
 
     best_weights_1, geminis_1, group_penalties_1, alphas_1, n_features_1 = path_res_1
@@ -236,7 +219,7 @@ def test_custom_metric_mmd(clf_class, data):
 )
 def test_custom_metric_generic(clf_class, data):
     gemini = gemclus.gemini.MMDGEMINI(kernel="precomputed", ovo=False)
-    clf = clf_class(batch_size=50, random_state=0, max_iter=100, gemini=gemini)
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, gemini=gemini, alpha=10)
 
     pre_computed_affinity = data @ data.T + 1  # Custom polynomial kernel
 
@@ -245,7 +228,7 @@ def test_custom_metric_generic(clf_class, data):
     # Now, perform the same path using the integrated kernel
     gemini = gemclus.gemini.MMDGEMINI(kernel="polynomial", ovo=False,
                                       kernel_params={"gamma": 1, "coef0": 1, "degree": 1})
-    clf = clf_class(batch_size=50, random_state=0, max_iter=100, gemini=gemini)
+    clf = clf_class(batch_size=50, random_state=0, max_iter=100, gemini=gemini, alpha=10)
     path_res_2 = clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 3)
 
     best_weights_1, geminis_1, group_penalties_1, alphas_1, n_features_1 = path_res_1

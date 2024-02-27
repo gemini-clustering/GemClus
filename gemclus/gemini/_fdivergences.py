@@ -201,6 +201,7 @@ class HellingerGEMINI(_FDivergence):
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
     """
+
     @constraint_params(
         {
             "ovo": [bool],
@@ -226,9 +227,12 @@ class HellingerGEMINI(_FDivergence):
         hellinger_gemini = 1 - np.mean(estimates, axis=0)
 
         if return_grad:
-            gradients = -0.5 * (p_y / cluster_wise_estimates + np.mean(p_y_x / cluster_wise_estimates, axis=0))
             if self.ovo:
-                gradients *= 2 * estimates.reshape((-1, 1))
+                sqrt_estimates = np.sqrt(estimates.reshape((-1, 1)))
+                gradients = - (p_y / cluster_wise_estimates * sqrt_estimates + np.mean(
+                    p_y_x / cluster_wise_estimates * sqrt_estimates, axis=0))
+            else:
+                gradients = -0.5 * (p_y / cluster_wise_estimates + np.mean(p_y_x / cluster_wise_estimates, axis=0))
 
             gradients /= y_pred.shape[0]
             return hellinger_gemini, gradients * clip_mask
