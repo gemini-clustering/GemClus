@@ -7,7 +7,7 @@ from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRWISE_DISTANC
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import softmax
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted, check_array
 
 from .._base_gemini import DiscriminativeModel
 from ..gemini import MMDGEMINI, WassersteinGEMINI
@@ -446,7 +446,7 @@ class RIM(LinearModel):
         self.optimiser_.update_params(weights, gradients)
 
 
-class KernelRIM(LinearModel):
+class KernelRIM(DiscriminativeModel):
     """ Implementation of the maximisation of the classical mutual information using a kernelised version of the
         logistic regression with an :math:`\ell_2` penalty on the weights. This implementation follows the framework
         described by Krause et al. in the RIM paper. Contrary to the RIM model, the KernelRIM model cannot be applied
@@ -527,8 +527,10 @@ class KernelRIM(LinearModel):
         0.43904857546947995
         """
     _parameter_constraints: dict = {
-        **LinearModel._parameter_constraints,
-        "reg": [Interval(Real, 0, None, closed="left")]
+        **DiscriminativeModel._parameter_constraints,
+        "reg": [Interval(Real, 0, None, closed="left")],
+        "base_kernel": [StrOptions(set(list(PAIRWISE_KERNEL_FUNCTIONS))), callable],
+        "base_kernel_params": [dict, None]
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, reg=1e-1,
@@ -548,45 +550,49 @@ class KernelRIM(LinearModel):
         self.base_kernel = base_kernel
         self.base_kernel_params = base_kernel_params
 
+    def _compute_kernel(self, X):
+        # Compute the kernel term between X and the input data
+        if callable(self.base_kernel):
+            if self.base_kernel_params is not None:
+                warnings.warn("Parameters passed through kernel_params are ignored when kernel is a callable.")
+            kernel = self.base_kernel(X)
+        else:
+            _params = dict() if self.base_kernel_params is None else self.base_kernel_params
+            kernel = pairwise_kernels(X, self.input_data_, metric=self.base_kernel, **_params)
+        return kernel
+
+    def _init_params(self, random_state, X=None):
+        in_threshold = np.sqrt(1 / self.n_features_in_)
+        self.W_ = random_state.uniform(-in_threshold, in_threshold, size=(len(X), self.n_clusters))
+        self.b_ = random_state.uniform(-in_threshold, in_threshold, size=(1, self.n_clusters))
+
+    def _get_weights(self):
+        return [self.W_, self.b_]
+
+    def _infer(self, X, retain=True):
+        kernel = self._compute_kernel(X)
+        H = kernel @ self.W_ + self.b_
+        return softmax(H)
+
     def fit(self, X, y=None):
-        # We start by computing the kernel on X
-        kwds = dict() if self.base_kernel_params is None else self.base_kernel_params
-        kernel = pairwise_kernels(X, metric=self.base_kernel, **kwds)
-        # Then, we fit as usual, but use the kernel as input
-        self.input_kernel_ = kernel
+        # We start by storing the input data for later kernel computations
+        check_array(X)
+        self.input_data_ = X
 
-        super().fit(kernel, y)
-
-        self.n_features_in_ = X.shape[1]
-
-        return self
+        return super().fit(X, y)
 
     def _compute_grads(self, X, y_pred, gradient):
-        # Use the already defined linear model gradients
-        gradients = super()._compute_grads(X, y_pred, gradient)
+        tau_hat_grad = y_pred * (gradient - (y_pred * gradient).sum(1, keepdims=True))  # Shape NxK
+
+        kernel = self._compute_kernel(X)
+
+        W_grad = kernel.T @ tau_hat_grad
+        b_grad = tau_hat_grad.sum(0, keepdims=True)
+
+        # Negative sign to force the optimiser to maximise instead of minimise
+        gradients = [-W_grad, -b_grad]
 
         # Then, add the regularisation grads
-        gradients[0] += 2 * self.reg * np.dot(self.input_kernel_, self.W_)
+        gradients[0] += 2 * self.reg * np.dot(kernel, self.W_)
 
         return gradients
-
-    def predict_proba(self, X):
-        """
-        Probability estimates that are the output of the neural network p(y|x). Note that the probabilities
-        only concern the data that was kernelised during the call to the fit method.
-
-        Parameters
-        ----------
-        X : unused, here for consistency
-
-        Returns
-        -------
-        T : array-like of shape (n_samples, n_clusters)
-            Returns the probability of the sample for each cluster in the model.
-        """
-        # Check is fit had been called
-        check_is_fitted(self)
-
-        warnings.warn("Predictions only concern the data that was passed to the fit method.")
-
-        return self._infer(self.input_kernel_, retain=False)

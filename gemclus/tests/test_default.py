@@ -34,7 +34,7 @@ def test_default_clf_init(clf):
 
 @pytest.mark.parametrize(
     "clf",
-    [x for x in all_models if "Linear" in x.__name__] + [RIM]
+    [x for x in all_models if "Linear" in x.__name__] + [RIM, KernelRIM]
 )
 def test_all_linear_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -133,9 +133,6 @@ def test_all_estimators(clf):
         if check.func in [check_methods_sample_order_invariance, check_methods_subset_invariance] \
                 and "Categorical" in type(estimator).__name__:
             continue
-        if "KernelRIM" == type(estimator).__name__:
-            if check.func in [check_methods_sample_order_invariance, check_methods_subset_invariance, check_fit2d_predict1d]:
-                continue
         check(clf)
 
 
