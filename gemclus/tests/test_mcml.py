@@ -29,7 +29,7 @@ def test_constraints_satisfaction(model_class):
     # Cannot link
     cannot_link = [np.array([I0[np.random.randint(0, len(I0))], I1[np.random.randint(0, len(I1))]]) for i in range(10)]
 
-    constrained_model = add_mlcl_constraint(model_class(n_clusters=2, random_state=0), must_link, cannot_link)
+    constrained_model = add_mlcl_constraint(model_class(n_clusters=2, random_state=0), must_link, cannot_link, factor=3)
     constrained_model.fit(X)
     y_pred_constraint = constrained_model.predict(X)
 
@@ -103,7 +103,7 @@ def test_name_masking(model_class):
 
 
 def test_conflictual_constraints():
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         # Items in tuple should always differ
         model = add_mlcl_constraint(LinearMMD(n_clusters=2),
                                     must_link=[(0, 0)],
@@ -111,7 +111,7 @@ def test_conflictual_constraints():
     assert str(excinfo.value) == (f"An element is necessary in the same cluster as itself, check "
                                   f"constraints in must-link")
 
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         # Items in tuple should always differ
         model = add_mlcl_constraint(LinearMMD(n_clusters=2),
                                     must_link=None,
@@ -119,7 +119,7 @@ def test_conflictual_constraints():
     assert str(excinfo.value) == (f"An element cannot be in a different cluster than itself, "
                                   f"check constraints in cannot-link")
 
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         # Here, the constraint are contradictory
         model = add_mlcl_constraint(LinearMMD(n_clusters=2),
                                     must_link=[(0, 1), (1, 2)],

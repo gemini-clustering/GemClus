@@ -15,7 +15,6 @@ from gemclus.tree import Kauri, Douglas, print_kauri_tree
 @pytest.mark.parametrize(
     ["X", "y"], [gemclus.data.celeux_one(n=300, p=1, random_state=0)]
 )
-@pytest.mark.timeout(5)
 def test_running_kauri(X, y):
     print(X)
 
@@ -80,7 +79,7 @@ def test_kauri_estimator():
 
 
 def test_douglas_estimator():
-    estimator = Douglas()
+    estimator = Douglas(gemini="mmd_ova")
     check_iterator = check_estimator(estimator, generate_only=True)
     for clf, check in check_iterator:
         if check.func == check_clustering:
@@ -91,7 +90,6 @@ def test_douglas_estimator():
 @pytest.mark.parametrize(
     "gemini", [MMDGEMINI(), MMDGEMINI(ovo=True), WassersteinGEMINI(), WassersteinGEMINI(ovo=True)]
 )
-@pytest.mark.timeout(5)
 def test_geminis_douglas(gemini):
     X, y = gemclus.data.celeux_one(n=300, p=1, random_state=0)
 

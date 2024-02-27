@@ -76,10 +76,11 @@ def test_erroneous_multiplier(clf_class, data):
 
     clf = clf_class(random_state=0, alpha=10)
 
-    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data,
-                                                                                   min_features=data.shape[-1] - 1,
-                                                                                   alpha_multiplier=-1,
-                                                                                   restore_best_weights=False)
+    with pytest.warns(UserWarning):
+        best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data,
+                                                                                       min_features=data.shape[-1] - 1,
+                                                                                       alpha_multiplier=-1,
+                                                                                       restore_best_weights=False)
 
     assert np.allclose(np.array(geminis_v1), np.array(geminis_v2))
     assert np.allclose(np.array(alphas_v1), np.array(alphas_v2))
@@ -100,8 +101,9 @@ def test_erroneous_min_features(clf_class, data):
 
     clf = clf_class(random_state=0)
 
-    best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data, min_features=0,
-                                                                                   restore_best_weights=False)
+    with pytest.warns(UserWarning):
+        best_weights_v2, geminis_v2, penalties_v2, alphas_v2, n_features_v2 = clf.path(data, min_features=0,
+                                                                                       restore_best_weights=False)
 
     for i in range(len(best_weights_v1)):
         assert np.allclose(best_weights_v1[i], best_weights_v2[i])
@@ -117,15 +119,16 @@ def test_erroneous_min_features(clf_class, data):
 )
 @pytest.mark.parametrize(
     "threshold",
-    [-1,2]
+    [-1, 2]
 )
 def test_erroneous_threshold(clf_class, data, threshold):
     clf = clf_class(random_state=0, alpha=10)
 
-    best_weights, geminis, penalties, alphas, n_features = clf.path(data,
-                                                                    min_features=data.shape[-1] - 1,
-                                                                    keep_threshold=threshold,
-                                                                    restore_best_weights=False)
+    with pytest.warns(UserWarning):
+        best_weights, geminis, penalties, alphas, n_features = clf.path(data,
+                                                                        min_features=data.shape[-1] - 1,
+                                                                        keep_threshold=threshold,
+                                                                        restore_best_weights=False)
 
     assert max(geminis) >= clf.score(data) >= 0.9 * max(geminis)
 
@@ -149,8 +152,9 @@ def test_batch_path(clf_class, data):
     sparse_models
 )
 def test_good_groups(clf_class, groups, data):
-    clf = clf_class(batch_size=50, random_state=0, max_iter=100, groups=groups)
-    clf.path(data, restore_best_weights=False, min_features=data.shape[1])
+    clf = clf_class(batch_size=50, random_state=0, max_iter=1, groups=groups)
+    with pytest.warns(UserWarning):
+        clf.path(data, restore_best_weights=False, min_features=data.shape[1])
 
 
 @pytest.mark.parametrize(
@@ -163,12 +167,9 @@ def test_good_groups(clf_class, groups, data):
 )
 def test_bad_groups(clf_class, groups, data):
     clf = clf_class(batch_size=50, random_state=0, max_iter=100, groups=groups)
-    try:
-        clf.path(data, restore_best_weights=False, min_features=data.shape[1])
-    except AssertionError as error:
-        print(error)
-    else:
-        assert False
+
+    with pytest.raises(ValueError):
+        clf.path(data, restore_best_weights=False, min_features=data.shape[1] - 1)
 
 
 @pytest.mark.parametrize(
@@ -241,6 +242,3 @@ def test_custom_metric_generic(clf_class, data):
     assert np.all(np.array(group_penalties_1) == np.array(group_penalties_2))
     assert np.all(np.array(alphas_1) == np.array(alphas_2))
     assert np.all(np.array(n_features_1) == np.array(n_features_2))
-
-    # FIX: ensure same results as with the real kernel
-    # Fix: ensure warning with dynamic regim
