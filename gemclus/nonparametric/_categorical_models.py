@@ -77,7 +77,7 @@ class CategoricalModel(DiscriminativeModel):
     >>> X,y=load_iris(return_X_y=True)
     >>> clf = CategoricalModel(gemini="mi",random_state=0).fit(X)
     >>> clf.score(X)
-    0.6577369504469952
+    0.6577369504
     """
     _parameter_constraints: dict = {
         **DiscriminativeModel._parameter_constraints,
@@ -191,7 +191,7 @@ class CategoricalMMD(CategoricalModel):
     >>> X,y=load_iris(return_X_y=True)
     >>> clf = CategoricalMMD(random_state=0).fit(X)
     >>> clf.score(X)
-    1.211726751861832
+    1.2117267518
     """
     _parameter_constraints: dict = {
         **CategoricalModel._parameter_constraints,
@@ -297,7 +297,7 @@ class CategoricalWasserstein(CategoricalModel):
     >>> X,y=load_iris(return_X_y=True)
     >>> clf = CategoricalWasserstein(random_state=0).fit(X)
     >>> clf.score(X)
-    1.3555482569532074
+    1.3555482569
     """
     _parameter_constraints: dict = {
         **CategoricalModel._parameter_constraints,

@@ -11,16 +11,17 @@ def check_groups(groups, n_features_in):
         for g in groups:
             all_indices.extend(list(g))
         # Ensure that the indices are valid
-        assert min(all_indices)>=0 and max(all_indices)<n_features_in, \
-            f"Indices passed to the groups argument should be contained in [0, {n_features_in}]"
+        if min(all_indices) < 0 or max(all_indices) >= n_features_in:
+            raise ValueError(f"Indices passed to the groups argument should be contained in [0, {n_features_in}]")
         if len(all_indices) == n_features_in:
             # We expect that it is a partition, so we should have as much indices as the number of features
-            assert set(all_indices) == set(range(n_features_in)), \
-                "Groups must form a partition of the set of variable indices. Perhaps there are duplicate indices?"
+            if set(all_indices) != set(range(n_features_in)):
+                raise ValueError("Groups must form a partition of the set of variable indices. Perhaps there are duplicate indices?")
             return groups
         else:
             # Not all indices are covered by the proposal, so let's assure that they are unique, then complete
-            assert len(set(all_indices)) == len(all_indices), "There cannot be duplicate entries in groups."
+            if len(set(all_indices)) != len(all_indices):
+                raise ValueError("There cannot be duplicate entries in groups.")
             new_groups = groups + [[i] for i in range(n_features_in) if i not in all_indices]
             return new_groups
     else:

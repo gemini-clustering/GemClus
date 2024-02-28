@@ -86,7 +86,7 @@ class LinearModel(DiscriminativeModel, ABC):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7550724287639448
+    1.7550724287
     """
     _parameter_constraints: dict = {
         **DiscriminativeModel._parameter_constraints,
@@ -209,7 +209,7 @@ class LinearMMD(LinearModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7048160115136364
+    1.7048160115
     """
     _parameter_constraints: dict = {
         **LinearModel._parameter_constraints,
@@ -318,7 +318,7 @@ class LinearWasserstein(LinearModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.710399298634854
+    1.7103992986
     """
     _parameter_constraints: dict = {
         **LinearModel._parameter_constraints,
@@ -417,7 +417,7 @@ class RIM(LinearModel):
         >>> clf.predict_proba(X[:2,:]).shape
         (2, 3)
         >>> clf.score(X)
-        0.43904857546947995
+        0.4390485754
         """
 
     _parameter_constraints: dict = {

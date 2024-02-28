@@ -1,9 +1,11 @@
 import functools
 import itertools
+from numbers import Real
 
 import numpy as np
 from scipy.sparse import csgraph
 from sklearn.utils import check_array
+from sklearn.utils._param_validation import Interval
 
 from ._base_gemini import DiscriminativeModel
 from ._constraints import constraint_params
@@ -34,8 +36,8 @@ def _check_structural_constraint(must_link, cannot_link):
 
             for pair in cannot_link:
                 pair_i, pair_j = pair
-                assert i != pair_i or j != pair_j, "Triangular contradiction in Must-link / Cannot-link constraints"
-                assert i != pair_j or j != pair_i, "Triangular contradiction in Must-link / Cannot-link constraints"
+                if (i == pair_i and j == pair_j) or (i == pair_j and j == pair_i):
+                    raise ValueError("Triangular contradiction in Must-link / Cannot-link constraints")
 
 
 def _check_linking_constraint(must_link=None, cannot_link=None):
@@ -46,22 +48,19 @@ def _check_linking_constraint(must_link=None, cannot_link=None):
     if must_link is not None:
         must_link = check_array(must_link, ensure_2d=True, ensure_min_features=2, dtype=int,
                                 input_name="Must-link constraint")
-        assert must_link.shape[1] == 2
         # Check that we do not have any self-reference
-        assert np.all(must_link[:, 0] != must_link[:, 1]), (
-            f"An element is necessary in the same cluster as itself, check"
-            f" constraints in must-link")
+        if np.any(must_link[:, 0] == must_link[:, 1]):
+            raise ValueError("An element is necessary in the same cluster as itself, check constraints in must-link")
     else:
         must_link = []
     if cannot_link is not None:
         cannot_link = check_array(cannot_link, ensure_2d=True, ensure_min_features=2, dtype=int,
                                   input_name="Cannot-link constraint")
-        assert cannot_link.shape[1] == 2
 
         # Check that we do not have any self-reference
-        assert np.all(cannot_link[:, 0] != cannot_link[:, 1]), (
-            f"An element cannot be in a different cluster than itself, "
-            f"check constraints in cannot-link")
+        if np.any(cannot_link[:, 0] == cannot_link[:, 1]):
+            raise ValueError("An element cannot be in a different cluster than itself, "
+                             "check constraints in cannot-link")
     else:
         cannot_link = []
 
@@ -71,8 +70,10 @@ def _check_linking_constraint(must_link=None, cannot_link=None):
 
 
 @constraint_params({
+    "gemini_model": [DiscriminativeModel],
     "must-link": ["array-like", None],
-    "cannot-link": ["array-like", None]
+    "cannot-link": ["array-like", None],
+    "factor": [Interval(Real, 0, None, closed="neither")]
 })
 def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1.0):
     """
@@ -103,9 +104,9 @@ def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1
     The model gemini model with decorated gradient functions to satisfy must-link / cannot-link constraints.
     """
 
-    assert issubclass(gemini_model.__class__, DiscriminativeModel)
-    assert issubclass(type(float), float) or isinstance(factor, float)
-    assert factor > 0
+    if not issubclass(gemini_model.__class__, DiscriminativeModel):
+        raise ValueError(f"The passed model does not inherit from the DiscriminativeModel class: "
+                         f"{gemini_model.__class__}")
 
     _check_linking_constraint(must_link, cannot_link)
 
