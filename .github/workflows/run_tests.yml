@@ -17,11 +17,13 @@ on:
 jobs:
   linux:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.10"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10"]
+        
 
     steps:
     - uses: actions/checkout@v2
@@ -42,8 +44,6 @@ jobs:
         coverage xml
     - name: Upload coverage reports to Codecov with GitHub Action
       uses: codecov/codecov-action@v4
-      if: always()
-      continue-on-error: true
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         slug: gemini-clustering/GemClus
