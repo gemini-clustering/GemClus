@@ -116,14 +116,13 @@ def test_good_params_2d_student(n, mean, cov, df):
 @pytest.mark.parametrize(
     "mean, cov",
     [(np.zeros((3, 2)), [np.eye(2)] * 2),  # different number of components
-     ([np.zeros(2)] * 2, [np.eye(2), np.zeros((2, 2))]),  # one non-psd covariance
+     ([np.zeros(2)] * 2, [np.eye(2), -np.eye(2)]),  # one non-psd covariance
+     ([np.zeros(2)] * 2, [np.eye(2), np.zeros((2,2))]), # Empty covariance
+     (np.ones((3, 2)), np.ones((3, 2, 4))), # Non-square covariances
+     (np.ones((3, 2)), np.ones((3, 4, 2))), # Non-square covariances
+     ([0, 1], [1, -1]), # Negative 1d variance
      ]
 )
 def test_bad_params_gmm(mean, cov):
-    try:
+    with pytest.raises(ValueError):
         X, y = draw_gmm(n=200, loc=mean, scale=cov, pvals=np.ones(len(mean)) / len(mean))
-    except AssertionError as e:
-        pass
-    except Exception as e:
-        print(e)
-        assert False

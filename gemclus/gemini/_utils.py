@@ -3,7 +3,8 @@ from ._geomdistances import MMDGEMINI, WassersteinGEMINI
 
 
 def _str_to_gemini(gemini_str):
-    assert gemini_str in AVAILABLE_GEMINIS, f"Unknown GEMINI: {gemini_str}. Please choose among {AVAILABLE_GEMINIS}."
+    if gemini_str not in AVAILABLE_GEMINIS:
+        raise ValueError(f"Unknown GEMINI: {gemini_str}. Please choose among {AVAILABLE_GEMINIS}.")
     if gemini_str == "mmd_ova":
         return MMDGEMINI()
     elif gemini_str == "mmd_ovo":

@@ -87,7 +87,8 @@ class MMDGEMINI(_GEMINI):
                 warnings.warn("Parameters passed through kernel_params are ignored when kernel is a callable.")
             return self.kernel(X)
         elif self.kernel == "precomputed":
-            assert y is not None, f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}"
+            if y is None:
+                raise ValueError(f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}")
             return y
         _params = dict() if self.kernel_params is None else self.kernel_params
         return pairwise_kernels(X, metric=self.kernel, **_params)
@@ -224,7 +225,8 @@ class WassersteinGEMINI(_GEMINI, ABC):
                 warnings.warn("Parameters passed through metric_params are ignored when a metric is a callable.")
             return self.metric(X)
         elif self.metric == "precomputed":
-            assert y is not None, f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}"
+            if y is None:
+                raise ValueError(f"Kernel should be precomputed, yet no kernel was passed as parameters: y={y}")
             return y
         _params = dict() if self.metric_params is None else self.metric_params
         return pairwise_distances(X, metric=self.metric, **_params)

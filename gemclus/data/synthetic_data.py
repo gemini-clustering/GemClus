@@ -48,11 +48,17 @@ def draw_gmm(n, loc, scale, pvals, random_state=None) -> Tuple[np.ndarray, np.nd
 
     # Check that the parameters have satisfying properties
     K, d = loc.shape
-    assert K == scale.shape[0], "The means and the covariances do not contain the same number of components"
-    assert d == scale.shape[1] and d == scale.shape[1], "The covariances should be square matrices"
-    assert K == pvals.shape[0], "The proportions and the means do not contain the same number of components"
-    assert np.all(pvals > 0), "Proportions or components should be positive."
-    assert np.sum(pvals) == 1, "Proportions of components do not add up to one."
+    if K != scale.shape[0]:
+        raise ValueError("The means and the covariances do not contain the same number of components")
+    if d!=1:
+        if d != scale.shape[1] or d != scale.shape[2]:
+            raise ValueError("The covariances should be square matrices")
+    if K != pvals.shape[0]:
+        raise ValueError("The proportions and the means do not contain the same number of components")
+    if np.any(pvals <= 0):
+        raise ValueError("Proportions or components should be strictly positive.")
+    if np.sum(pvals) != 1:
+        raise ValueError("Proportions of components do not add up to one.")
 
     generator = check_random_state(random_state)
 
@@ -63,9 +69,18 @@ def draw_gmm(n, loc, scale, pvals, random_state=None) -> Tuple[np.ndarray, np.nd
     # Draw the true cluster from which to draw
     y = generator.choice(K, p=pvals, size=(n,))
     if d == 1:
+        for k in range(K):
+            if scale[k] <= 0:
+                raise ValueError(f"The {k}-th variance is negative.")
         for k in range(len(loc)):
             X += [generator.normal(loc[k], scale[k], size=(n,))]
     else:
+        for k in range(K):
+            if np.any(np.linalg.eigvals(scale[k]) < 0):
+                raise ValueError(f"The {k}-th covariance is not positive semi-definite")
+            if np.all(scale[k] == 0):
+                raise ValueError(f"The {k}-th covariance matrix contains only zeroes")
+
         for k in range(len(loc)):
             X += [generator.multivariate_normal(loc[k], scale[k], size=(n,))]
 
@@ -114,7 +129,8 @@ def multivariate_student_t(n, loc, scale, df=10, random_state=None) -> np.ndarra
     scale = check_array(scale, ensure_2d=True, input_name="Scale")
 
     d = len(loc)
-    assert scale.shape[0] == d and scale.shape[1] == d, "Please provide a mean and scale with consistent shapes"
+    if scale.shape[0] != d or scale.shape[1] != d:
+        raise ValueError("Please provide a mean and scale with consistent shapes w.r.t. the mean")
 
     generator = check_random_state(random_state)
 

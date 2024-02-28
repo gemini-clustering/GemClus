@@ -91,7 +91,7 @@ class MLPModel(DiscriminativeModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    0.6325592616409484
+    0.6325592616
     """
     _parameter_constraints: dict = {
         **DiscriminativeModel._parameter_constraints,
@@ -234,7 +234,7 @@ class MLPMMD(MLPModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7592155845461646
+    1.7592155845
     """
     _parameter_constraints: dict = {
         **MLPModel._parameter_constraints,
@@ -352,7 +352,7 @@ class MLPWasserstein(MLPModel):
     >>> clf.predict_proba(X[:2,:]).shape
     (2, 3)
     >>> clf.score(X)
-    1.7636482655127903
+    1.7636482655
     """
     _parameter_constraints: dict = {
         **MLPModel._parameter_constraints,

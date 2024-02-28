@@ -41,6 +41,7 @@ clustering.
     linear.LinearMMD
     linear.LinearWasserstein
     linear.RIM
+    linear.KernelRIM
     mlp.MLPModel
     mlp.MLPMMD
     mlp.MLPWasserstein

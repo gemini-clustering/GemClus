@@ -1,17 +1,17 @@
 import pytest
 from sklearn.datasets import load_iris
-from sklearn.utils.estimator_checks import check_estimator
+from sklearn.utils.estimator_checks import check_estimator, check_fit2d_predict1d
 from sklearn.utils.estimator_checks import check_clustering, check_methods_sample_order_invariance, \
     check_methods_subset_invariance
 
-from ..linear import LinearWasserstein, LinearMMD, RIM, LinearModel
+from ..linear import LinearWasserstein, LinearMMD, RIM, LinearModel, KernelRIM
 from ..mlp import MLPMMD, MLPWasserstein, MLPModel
 from ..nonparametric import CategoricalWasserstein, CategoricalMMD, CategoricalModel
 from ..sparse import SparseMLPMMD, SparseLinearMMD, SparseLinearMI, SparseLinearModel, SparseMLPModel
 
 all_models = [LinearMMD, MLPMMD, LinearWasserstein, MLPWasserstein, SparseLinearMMD, SparseMLPMMD, RIM,
               CategoricalMMD, CategoricalWasserstein, SparseLinearMI, LinearModel, MLPModel, SparseMLPModel,
-              SparseLinearModel, CategoricalModel]
+              SparseLinearModel, CategoricalModel, KernelRIM]
 
 @pytest.fixture
 def data():
@@ -34,7 +34,7 @@ def test_default_clf_init(clf):
 
 @pytest.mark.parametrize(
     "clf",
-    [x for x in all_models if "Linear" in x.__name__] + [RIM]
+    [x for x in all_models if "Linear" in x.__name__] + [RIM, KernelRIM]
 )
 def test_all_linear_attributes(clf, data):
     clf = clf(max_iter=1)
@@ -138,7 +138,7 @@ def test_all_estimators(clf):
 
 @pytest.mark.parametrize(
     "clf",
-    [x for x in all_models if "Categorical" not in x.__name__]
+    [x for x in all_models if "Categorical" not in x.__name__ and x.__name__ != "KernelRIM"]
 )
 @pytest.mark.parametrize(
     "batch_size",

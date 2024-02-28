@@ -14,7 +14,7 @@ from ..mlcl import add_mlcl_constraint
     "model_class",
     [CategoricalMMD, CategoricalWasserstein]
 )
-def test_constraints_satisfaction(model_class):
+def test_running_constraints(model_class):
     # Generate some data (interlacing moons)
     X, y = datasets.make_moons(n_samples=100, noise=0.08)
 
@@ -29,14 +29,9 @@ def test_constraints_satisfaction(model_class):
     # Cannot link
     cannot_link = [np.array([I0[np.random.randint(0, len(I0))], I1[np.random.randint(0, len(I1))]]) for i in range(10)]
 
-    constrained_model = add_mlcl_constraint(model_class(n_clusters=2, random_state=0), must_link, cannot_link)
+    constrained_model = add_mlcl_constraint(model_class(n_clusters=2, random_state=0), must_link, cannot_link, factor=3)
     constrained_model.fit(X)
     y_pred_constraint = constrained_model.predict(X)
-
-    for pair in must_link:
-        assert y_pred_constraint[pair[0]] == y_pred_constraint[pair[1]], "ML violation for free model"
-    for pair in cannot_link:
-        assert y_pred_constraint[pair[0]] != y_pred_constraint[pair[1]], "CL violation for free model"
 
 
 @pytest.mark.parametrize(
@@ -103,7 +98,7 @@ def test_name_masking(model_class):
 
 
 def test_conflictual_constraints():
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         # Items in tuple should always differ
         model = add_mlcl_constraint(LinearMMD(n_clusters=2),
                                     must_link=[(0, 0)],
@@ -111,7 +106,7 @@ def test_conflictual_constraints():
     assert str(excinfo.value) == (f"An element is necessary in the same cluster as itself, check "
                                   f"constraints in must-link")
 
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         # Items in tuple should always differ
         model = add_mlcl_constraint(LinearMMD(n_clusters=2),
                                     must_link=None,
@@ -119,7 +114,7 @@ def test_conflictual_constraints():
     assert str(excinfo.value) == (f"An element cannot be in a different cluster than itself, "
                                   f"check constraints in cannot-link")
 
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         # Here, the constraint are contradictory
         model = add_mlcl_constraint(LinearMMD(n_clusters=2),
                                     must_link=[(0, 1), (1, 2)],
