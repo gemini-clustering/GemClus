@@ -2,6 +2,7 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/gemini-clustering/GemClus/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/gemini-clustering/GemClus/tree/main)
 [![Downloads](https://static.pepy.tech/badge/gemclus)](https://pepy.tech/project/gemclus)
 [![codecov](https://codecov.io/gh/gemini-clustering/GemClus/graph/badge.svg?token=PBKYANOMWK)](https://codecov.io/gh/gemini-clustering/GemClus)
+[![Tests](https://github.com/gemini-clustering/GemClus/actions/workflows/run_tests.yml/badge.svg)](https://github.com/gemini-clustering/GemClus/actions/workflows/run_tests.yml)
 
 # GEMCLUS - A package for discriminative clustering using GEMINI
 
