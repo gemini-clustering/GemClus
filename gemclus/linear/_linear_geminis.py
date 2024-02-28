@@ -449,8 +449,7 @@ class RIM(LinearModel):
 class KernelRIM(DiscriminativeModel):
     """ Implementation of the maximisation of the classical mutual information using a kernelised version of the
         logistic regression with an :math:`\ell_2` penalty on the weights. This implementation follows the framework
-        described by Krause et al. in the RIM paper. Contrary to the RIM model, the KernelRIM model cannot be applied
-        to unseen data.
+        described by Krause et al. in the RIM paper.
 
         Parameters
         ----------
@@ -472,6 +471,9 @@ class KernelRIM(DiscriminativeModel):
             - 'sgd' refers to stochastic gradient descent.
             - 'adam' refers to a stochastic gradient-based optimiser proposed by Kingma, Diederik and Jimmy Ba.
 
+        batch_size: int, default=None
+            The size of batches during gradient descent training. If set to None, the whole data will be considered.
+
         verbose: bool, default=False
             Whether to print progress messages to stdout
 
@@ -479,12 +481,10 @@ class KernelRIM(DiscriminativeModel):
             Determines random number generation for weights and bias initialisation.
             Pass an int for reproducible results across multiple function calls.
 
-        base_kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid', 'precomputed'},
-        default='linear'
+        base_kernel: {'additive_chi2', 'chi2', 'cosine','linear','poly','polynomial','rbf','laplacian','sigmoid'}, or
+        callable, default='linear'
             The kernel to use in combination with the MMD objective. It corresponds to one value of `KERNEL_PARAMS`.
             Currently, all kernel parameters are the default ones.
-            If the kernel is set to 'precomputed', then a custom kernel matrix must be passed to the argument `y` of
-            `fit`, `fit_predict` and/or `score`.
 
         base_kernel_params: dict, default=None
             A dictionary of keyword arguments to pass to the chosen kernel function.
@@ -524,7 +524,7 @@ class KernelRIM(DiscriminativeModel):
         >>> clf.predict_proba(X[:2,:]).shape
         (2, 3)
         >>> clf.score(X)
-        0.43904857546947995
+        0.4390485754
         """
     _parameter_constraints: dict = {
         **DiscriminativeModel._parameter_constraints,
@@ -534,7 +534,7 @@ class KernelRIM(DiscriminativeModel):
     }
 
     def __init__(self, n_clusters=3, max_iter=1000, learning_rate=1e-3, reg=1e-1,
-                 solver="adam", verbose=False, random_state=None,
+                 solver="adam", batch_size=None, verbose=False, random_state=None,
                  base_kernel="linear", base_kernel_params=None):
         super().__init__(
             n_clusters=n_clusters,
@@ -542,7 +542,7 @@ class KernelRIM(DiscriminativeModel):
             max_iter=max_iter,
             learning_rate=learning_rate,
             solver=solver,
-            batch_size=None,
+            batch_size=batch_size,
             verbose=verbose,
             random_state=random_state
         )
@@ -589,10 +589,11 @@ class KernelRIM(DiscriminativeModel):
         W_grad = kernel.T @ tau_hat_grad
         b_grad = tau_hat_grad.sum(0, keepdims=True)
 
+        # Then, add the regularisation grads
+        complete_kernel = self._compute_kernel(self.input_data_)
+        W_grad -= 2 * self.reg * np.dot(complete_kernel, self.W_)
+
         # Negative sign to force the optimiser to maximise instead of minimise
         gradients = [-W_grad, -b_grad]
-
-        # Then, add the regularisation grads
-        gradients[0] += 2 * self.reg * np.dot(kernel, self.W_)
 
         return gradients
