@@ -1,12 +1,12 @@
 #####################################
-Quick start on gemclus
+Quick start on GemClus
 #####################################
 
 We provide here a short description of the GEMINI clustering package and hints about what it can do or not.
 
 .. note::
     For more details on the definition of GEMINI and its performances, please refer to `the original
-    publication <https://openreview.net/pdf?id=0Oy3PiA-aDp>`_ by Ohl et al [1].
+    publication <https://openreview.net/pdf?id=0Oy3PiA-aDp>`_ by Ohl et al [1]_.
 
 What is GEMINI
 ================
@@ -45,7 +45,7 @@ The package respects the `scikit-learn` conventions for models API. Thus, doing 
     model.predict(X)
 
 .. note::
-    At the moment, and as reported in [1], GEMINI models may converge to using fewer clusters than asked in the models.
+    At the moment, and as reported in [1]_, GEMINI models may converge to using fewer clusters than asked in the models.
     It is thus a good practice to get models to run several times and get a good merge of the results.
 
 For the details of the available models and GEMINI losses, you may check the `API reference <api.html>`_. Moreover, we
@@ -55,7 +55,7 @@ Selecting features in clustering
 ==================================
 
 We further propose an improvement of the GEMINI clustering to bring feature selection. This is mainly inspired from
-[2] and was proposed in [3]. If you feel interested in feature selection, take a look at our
+[2]_ and was proposed in [3]_. If you feel interested in feature selection, take a look at our
 `sparse models <api.html#sparse-clustering-models>`_.
 
 References
