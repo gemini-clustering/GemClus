@@ -56,7 +56,7 @@ Selecting features in clustering
 
 We further propose an improvement of the GEMINI clustering to bring feature selection. This is mainly inspired from
 [2]_ and was proposed in [3]_. If you feel interested in feature selection, take a look at our
-`sparse models <api.html#sparse-clustering-models>`_.
+`sparse models <api.html#sparse-models>`_ or `tree models <api.html#tree-models>`_.
 
 References
 ===========
@@ -69,4 +69,8 @@ References
 
 .. [3] Ohl, L., Mattei, P.-A., Bouveyron, C., Leclercq, M., Droit, A., & Precioso, F. (2023).
     `Sparse GEMINI for Joint Discriminative Clustering and Feature Selection <https://arxiv.org/abs/2302.03391>`_.
-    doi:10.48550/ARXIV.2302.03391
+    arXiv: 2302.03391
+
+.. [4] Ohl L., Mattei P.-A., Leclercq M., Droit A., Precioso F. (2024).
+    `Kernel KMeans clustering splits for end-to-end unsupervised decision trees <https://arxiv.org/abs/2402.12232>`_
+    arXiv: 2402.12232

@@ -311,6 +311,7 @@ intersphinx_mapping = {
 # sphinx-gallery configuration
 sphinx_gallery_conf = {
     'doc_module': 'gemclus',
+    'nested_sections': False,
     'backreferences_dir': os.path.join('generated'),
     'reference_url': {
         'gemclus': None}

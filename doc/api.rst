@@ -100,7 +100,16 @@ inner rules.
     
     tree.print_kauri_tree
     
-    
+Generic models
+--------------
+
+This model provides the skeleton for creating any model that must be trained with GEMINI.
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    DiscriminativeModel
     
 Constraints
 ===========
