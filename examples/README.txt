@@ -1,7 +1,4 @@
-General examples
+Example gallery
 ================
 
-We give here some examples on how to use our base model with GEMINI.
-
-Discriminative clustering
--------------------------
+We provide here different examples on how to use the GemClus library, from clustering to variable selection.

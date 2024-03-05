@@ -5,7 +5,8 @@ Welcome and thank you for checking GEMINI out, this really pleasures us.
 
 GEMINI is a clustering-dedicated function derived from information theory that allows to do clustering without hypotheses
 on the data distributions. We try to provide overall some implementations of small-scale discriminative clustering
-methods in this package.
+methods in this package. These methods include small neural networks, logistic regression, decision trees and work from
+other paper that we will relevant to the discriminative clustering field in the GEMINI spirit.
 
 .. toctree::
    :maxdepth: 1

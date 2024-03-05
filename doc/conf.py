@@ -48,14 +48,7 @@ extensions = [
 # see https://github.com/numpy/numpydoc/issues/69
 numpydoc_show_class_members = False
 
-# pngmath / imgmath compatibility layer for different sphinx versions
-import sphinx
-from distutils.version import LooseVersion
-
-if LooseVersion(sphinx.__version__) < LooseVersion('1.4'):
-    extensions.append('sphinx.ext.pngmath')
-else:
-    extensions.append('sphinx.ext.imgmath')
+extensions.append('sphinx.ext.mathjax')
 
 autodoc_default_flags = ['members', 'inherited-members']
 
@@ -311,6 +304,7 @@ intersphinx_mapping = {
 # sphinx-gallery configuration
 sphinx_gallery_conf = {
     'doc_module': 'gemclus',
+    'nested_sections': False,
     'backreferences_dir': os.path.join('generated'),
     'reference_url': {
         'gemclus': None}

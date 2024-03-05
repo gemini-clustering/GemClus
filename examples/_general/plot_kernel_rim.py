@@ -1,10 +1,11 @@
 """
-==============================================================
-Comparative clustering of circles dataset with kernel change
-==============================================================
+===================================
+Clustering circles with kernel RIM
+===================================
 
 We show here a simple dataset consisting in two centred circle that can be challenging for some clustering algorithms.
-This dataset can be challenging for GEMINI as well, unless we change the kernel adequately.
+We solve this case using the kernel RIM algorithm. This algorithm fits a logistic regression on the kernel
+matrix derived from the dataset.
 """
 from matplotlib import pyplot as plt
 from sklearn import datasets

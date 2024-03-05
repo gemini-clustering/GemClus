@@ -1,5 +1,5 @@
 ####################
-GEMCLUS API
+GemClus API
 ####################
 
 The GEMINI-clustering package currently contains simple MLP and logistic regression for all-feature clustering as well as
@@ -14,7 +14,7 @@ The following classes implement the basic GEMINIs for scoring and evaluating any
 clustering.
 
 .. autosummary::
-    :toctree: generated/gemini/
+    :toctree: generated/
     :template: class.rst
 
     gemini.MMDGEMINI
@@ -34,7 +34,7 @@ These models are based on standard distributions like the logistic regression or
 clustering.
 
 .. autosummary::
-   :toctree: generated/models/
+   :toctree: generated/
    :template: class.rst
 
     linear.LinearModel
@@ -55,7 +55,7 @@ any decision boundary and do not have hyper parameters. However, the underlying 
 unseen samples for prediction.
 
 .. autosummary::
-   :toctree: generated/models/
+   :toctree: generated/
    :template: class.rst
 
     nonparametric.CategoricalModel
@@ -69,7 +69,7 @@ These models can be trained to progressively remove features in the conditional 
 for selecting a subset of features which may enhance interpretability of clustering.
 
 .. autosummary::
-   :toctree: generated/models/
+   :toctree: generated/
    :template: class.rst
 
     sparse.SparseLinearModel
@@ -85,7 +85,7 @@ We propose clustering methods based on tree architectures. Thus rules are simult
 is learnt.
 
 .. autosummary::
-    :toctree: generated/models/
+    :toctree: generated/
     :template: class.rst
 
     tree.Kauri
@@ -95,12 +95,21 @@ The following functions are intended to help understanding the structure of the 
 inner rules.
 
 .. autosummary::
-    :toctree: generated/models/
+    :toctree: generated/
     :template: function.rst
     
     tree.print_kauri_tree
     
-    
+Generic models
+--------------
+
+This model provides the skeleton for creating any model that must be trained with GEMINI.
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    DiscriminativeModel
     
 Constraints
 ===========
@@ -108,7 +117,7 @@ Constraints
 This method aims at decorating the GEMINI models to give further guidance on the desired clustering.
 
 .. autosummary::
-    :toctree: generated/constraints/
+    :toctree: generated/
     :template: function.rst
     
     add_mlcl_constraint
@@ -119,7 +128,7 @@ Dataset generation
 This package contains simple functions for generating synthetic datasets.
 
 .. autosummary::
-    :toctree: generated/data/
+    :toctree: generated/
     :template: function.rst
 
     data.draw_gmm

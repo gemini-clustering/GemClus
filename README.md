@@ -67,6 +67,10 @@ url={https://openreview.net/forum?id=0Oy3PiA-aDp}
 }
 ```
 
+## Contributing
+
+We are open to suggestions of models that can be relevant to the discriminative clustering spirit of *GemClus*.
+
 ## Acknowledgements
 
 This work has been supported by the French government, through the 3IA Côte d'Azur, Investment in the Future, project
