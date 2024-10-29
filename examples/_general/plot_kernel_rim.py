@@ -23,13 +23,15 @@ from gemclus.linear import KernelRIM
 noise = 0.05
 factor = 0.1
 X, y = datasets.make_circles(n_samples=200, noise=noise, factor=factor, random_state=0)
+mean, std = X.mean(0), X.std(0)
+X = (X-mean)/std
 
 #############################
 # Training clustering model
 # ---------------------------
 
 # %%clustering
-model_kernel = KernelRIM(n_clusters=2, base_kernel="laplacian", max_iter=1000, reg=4/len(X), random_state=0)
+model_kernel = KernelRIM(n_clusters=2, base_kernel="rbf", reg=0, random_state=0)
 y_pred = model_kernel.fit_predict(X)
 print(f"ARI = {metrics.adjusted_rand_score(y, y_pred)}")
 
@@ -39,6 +41,7 @@ print(f"ARI = {metrics.adjusted_rand_score(y, y_pred)}")
 
 # Create a novel set of samples and cluster them
 new_X, new_y = datasets.make_circles(n_samples=200, noise=noise, factor=factor, random_state=1)
+new_X = (new_X-mean)/std
 new_pred = model_kernel.predict(new_X)
 print(f"ARI = {metrics.adjusted_rand_score(new_y, new_pred)}")
 
