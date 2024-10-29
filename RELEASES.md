@@ -2,6 +2,8 @@
 
 ## In development
 
+## 1.0.0 (Latest)
+
 + Adding the kernelised version of RIM with: `KernelRIM`
 + Adding the dynamic version of paths for feature selection in sparse models. A simply argument `dynamic=True` activates the dynamic mode.
 + Possibility of passing custom kernels and metrics to sparse models. This is not compatible with the dynamic mode.
@@ -18,7 +20,7 @@
   + Both the MMD and Wasserstein GEMINI now support custom kernel/metric parameters
 + Fixing a gradient mistake in the `gemclus.MI`
 
-## 0.2.0 (Latest)
+## 0.2.0
 
 + Adding a new sparse logistic regression model trained with mutual information instead of MMD GEMINI: `gemclus.sparse.SparseLinearMI`
 + Adding new package containing methods for unsupervised tree clustering with end-to-end training: `gemclus.tree`. The package features a CART-like algorithm for clustering named `Kauri` and a differentiable tree named `Douglas`
