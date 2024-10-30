@@ -22,19 +22,19 @@ class _FDivergence(_GEMINI, ABC):
 
 
 class KLGEMINI(_FDivergence):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one KL GEMINI.
 
     The one-vs-all version compares the KL divergence between a cluster distribution
     and the data distribution. It is the classical mutual information.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{KL}(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{KL}(p(x|y)\|p(x))]
 
     The one-vs-one version compares the KL divergence between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{KL}(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{KL}(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -84,12 +84,12 @@ class KLGEMINI(_FDivergence):
 
 
 class MI(KLGEMINI):
-    """
+    r"""
     Implements the classical mutual information between cluster conditional probabilities and the complete data
     probabilities:
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{KL}(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{KL}(p(x|y)\|p(x))]
 
     This class is a simplified shortcut for KLGEMINI(ovo=False).
 
@@ -104,19 +104,19 @@ class MI(KLGEMINI):
 
 
 class TVGEMINI(_FDivergence):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one Total Variation distance GEMINI.
 
     The one-vs-all version compares the total variation distance between a cluster distribution
     and the data distribution.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{TV}(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{TV}(p(x|y)\|p(x))]
 
     The one-vs-one version compares the TV distance between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{TV}(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{TV}(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -179,19 +179,19 @@ class TVGEMINI(_FDivergence):
 
 
 class HellingerGEMINI(_FDivergence):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one Squared Hellinger distance GEMINI.
 
     The one-vs-all version compares the squared Hellinger distance distance between a cluster distribution
     and the data distribution.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{H}^2(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{H}^2(p(x|y)\|p(x))]
 
     The one-vs-one version compares the squared Hellinger distance between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{H}^2(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{H}^2(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -240,7 +240,7 @@ class HellingerGEMINI(_FDivergence):
             return hellinger_gemini
 
 class ChiSquareGEMINI(_FDivergence):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one Chi Squared divergence GEMINI.
 
     .. math::

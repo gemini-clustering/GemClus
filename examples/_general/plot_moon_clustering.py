@@ -7,7 +7,8 @@ This example is a retake from the experiment in the original GEMINI paper where 
 in between two facing moons. To do so, the trick is to use a specific distance using the "precomputed" option
 which will guide the clustering algorithm to the desired solution.
 
-Note that we use `gemclus.mlp.MLPWasserstein` because a linear model would not be able to find the optimal boundary.
+Note that we use :class:`gemclus.mlp.MLPWasserstein` because a linear model would not be able to find the optimal
+boundary.
 """
 
 import numpy as np

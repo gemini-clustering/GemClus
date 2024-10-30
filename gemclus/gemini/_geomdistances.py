@@ -13,7 +13,7 @@ from ._base_loss import _GEMINI
 
 
 class MMDGEMINI(_GEMINI):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one MMD GEMINI.
     The one-vs-all version compares the maximum mean discrepancy between a cluster distribution
     and the data distribution.
@@ -21,14 +21,14 @@ class MMDGEMINI(_GEMINI):
     The one-vs-one objective is equivalent to a kernel KMeans objective.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{MMD}_\kappa(p(x|y)\|p(x|y))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{MMD}_\kappa(p(x|y)\|p(x|y))]
 
     where :math:`\kappa` is a kernel defined between the samples of the data space.
 
     The one-vs-one compares the maximum mean discrepancy between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{MMD}_\kappa(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{MMD}_\kappa(p(x|y_a)\|p(x|y_b))]
 
 
     Parameters
@@ -154,7 +154,7 @@ class MMDGEMINI(_GEMINI):
 
 
 class WassersteinGEMINI(_GEMINI, ABC):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one Wasserstein GEMINI.
 
     The one-vs-all version compares the Wasserstein distance between a cluster distribution

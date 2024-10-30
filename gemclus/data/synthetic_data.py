@@ -215,7 +215,7 @@ def gstm(n=500, alpha=2, df=1, random_state=None):
     }
 )
 def celeux_one(n=300, p=20, mu=1.7, random_state=None) -> Tuple[np.ndarray, np.ndarray]:
-    """
+    r"""
     Draws :math:`n` samples from a Gaussian mixture with 3 isotropic components of respective means 1, 0 and 1
     over 5 dimensions scaled by :math:`\mu`. The data is concatenated with :math:`p` additional noisy excessive random
     variables that are independent of the true clusters. This dataset is taken by Celeux et al., section 3.1.

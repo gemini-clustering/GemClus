@@ -348,7 +348,7 @@ class LinearWasserstein(LinearModel):
 
 
 class RIM(LinearModel):
-    """ Implementation of the maximisation of the classical mutual information using a logistic regression with an
+    r""" Implementation of the maximisation of the classical mutual information using a logistic regression with an
         :math:`\ell_2` penalty on the weights. This implementation follows the framework described by Krause et al. in the
         RIM paper.
 
@@ -447,7 +447,7 @@ class RIM(LinearModel):
 
 
 class KernelRIM(LinearModel):
-    """ Implementation of the maximisation of the classical mutual information using a kernelised version of the
+    r""" Implementation of the maximisation of the classical mutual information using a kernelised version of the
         logistic regression with an :math:`\ell_2` penalty on the weights. This implementation follows the framework
         described by Krause et al. in the RIM paper.
 
