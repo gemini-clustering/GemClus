@@ -238,3 +238,40 @@ class HellingerGEMINI(_FDivergence):
             return hellinger_gemini, gradients * clip_mask
         else:
             return hellinger_gemini
+
+class ChiSquareGEMINI(_FDivergence):
+    """
+    Implements the one-vs-all and one-vs-one Chi Squared divergence GEMINI.
+
+    Parameters
+    ----------
+    ovo: bool, default=False
+        Whether to use the one-vs-all objective (False) or the one-vs-one objective (True).
+
+    epsilon: float, default=1e-12
+        The precision for clipping the prediction values in order to avoid numerical instabilities.
+    """
+
+    @constraint_params(
+        {
+            "epsilon": [Interval(Real, 0, 1, closed="neither")]
+        }
+    )
+    def __init__(self, epsilon=1e-12):
+        super().__init__(epsilon)
+
+    def evaluate(self, y_pred, affinity, return_grad=False):
+        # Use a clip mask for numerical stability in gradients
+        clip_mask = (y_pred > self.epsilon) & (y_pred < 1 - self.epsilon)
+        p_y_x = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
+        p_y = p_y_x.mean(0)
+
+        cluster_wise_estimates = p_y_x / p_y
+        chi2_gemini = np.sum(p_y_x*cluster_wise_estimates, axis=1).mean()
+
+        if return_grad:
+            gradients = (2*cluster_wise_estimates-np.square(cluster_wise_estimates).mean(0))
+            gradients /= y_pred.shape[0]
+            return chi2_gemini, gradients * clip_mask
+        else:
+            return chi2_gemini
