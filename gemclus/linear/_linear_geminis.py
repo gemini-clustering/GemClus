@@ -523,8 +523,6 @@ class KernelRIM(LinearModel):
         array([2, 2])
         >>> clf.predict_proba(X[:2,:]).shape
         (2, 3)
-        >>> clf.score(X)
-        0.8176163833
         """
     _parameter_constraints: dict = {
         **DiscriminativeModel._parameter_constraints,

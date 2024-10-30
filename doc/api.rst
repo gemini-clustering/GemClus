@@ -23,6 +23,7 @@ clustering.
     gemini.KLGEMINI
     gemini.TVGEMINI
     gemini.HellingerGEMINI
+    gemini.ChiSquareGEMINI
 
 Clustering models
 ==================

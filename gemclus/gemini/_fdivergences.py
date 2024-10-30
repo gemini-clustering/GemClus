@@ -243,13 +243,20 @@ class ChiSquareGEMINI(_FDivergence):
     """
     Implements the one-vs-all and one-vs-one Chi Squared divergence GEMINI.
 
+    .. math::
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[D_{\chi^2}(p(x|y)\|p(x))]
+
     Parameters
     ----------
-    ovo: bool, default=False
-        Whether to use the one-vs-all objective (False) or the one-vs-one objective (True).
-
     epsilon: float, default=1e-12
         The precision for clipping the prediction values in order to avoid numerical instabilities.
+
+    References
+    ----------
+    Sugiyama, M., Yamada, M., Kimura, M., & Hachiya, H. (2011). On information-maximization clustering: Tuning
+    parameter selection and analytic solution. In Proceedings of the 28th International Conference on Machine
+    Learning (ICML-11) (pp. 65-72).
+
     """
 
     @constraint_params(
