@@ -2,75 +2,83 @@
 Quick start on GemClus
 #####################################
 
-We provide here a short description of the GEMINI clustering package and hints about what it can do or not.
+In GemClus, we distinguish models and their objective function. It is possible to pick any pair of model and objective
+function to do clustering. Let us use for example a logistic regression or a multi-layered perceptron (MLP) as
+clustering models. In GemClus, generic models come by default with the one-vs-all MMD GEMINI.
 
-.. note::
-    For more details on the definition of GEMINI and its performances, please refer to `the original
-    publication <https://openreview.net/pdf?id=0Oy3PiA-aDp>`_ by Ohl et al [1]_.
+.. code-block:: python
 
-What is GEMINI
-================
+    # Import model definitions
+    from gemclus import mlp
+    from gemclus import linear
 
-GEMINI stands for `Generalised Mutual Information`, a novel type of information theory score that can be used as an
-objective to maximise to perform clustering. GEMINI consists in measuring the expectation of a distance :math:`D`
-between custer distributions. For a set of clustering distributions :math:`p_\theta(x|y)`, GEMINI has two definitions.
-The first one is the one-vs-all (OvA) which compares the cluster distribution to the data distribution:
+    # Create a 2-layer neural network for clustering
+    model = mlp.MLPModel()
+    model.fit(X)
+    p_y_given_x = model.predict_proba(X)
 
-.. math::
+    # Create an unsupervised logistic regression
+    model = linear.LinearModel()
+    model.fit(X)
+    p_y_given_x = model.predict_proba(X)
 
-    \mathbb{E}_{y \sim p_\theta(y)} \left[ D(p_\theta(x|y) \| p(x))\right],
+It is possible to select different GEMINI by using the `gemini` parameter. All available GEMINIs are listed in
+`gemclus.gemini.AVAILABLE_GEMINIS`. For example, the one-vs-one total variation GEMINI can be accessed using the code
+"tv_ovo".
 
-and the one-vs-one (OvO) version which compares two independently drawn cluster distributions:
+.. code-block:: python
 
-.. math::
+    model = mlp.MLPModel(gemini="tv_ovo")
 
-    \mathbb{E}_{y_1, y_2 \sim p_\theta(y)} \left[ D(p_\theta(x|y_1) \| p_\theta(x | y_2))\right].
+Another approach is to instanciate the desired gemini and pass it as argument. Here, we pass the argument `ovo=True`.
+Otherwise, geminis are in OvA mode by default.
 
-The specificity of GEMINI is that it involves distances in which the Bayes Theorem can easily be performed to get
-a tractable objective that we cane valuate using only clustering probabilities. Hence, models trained with GEMINI
-are discriminative models :math:`p_\theta(y|x)` without any parametric assumption.
+.. code-block:: python
 
-Doing discriminative clustering
-===============================
+    from gemclus import gemini
 
-The package respects the `scikit-learn` conventions for models API. Thus, doing clustering with the GEMINI looks like::
+    objective = gemini.TVGEMINI(ovo=True)
+    model = mlp.MLPModel(gemini=objective)
 
-    # Import the model and a simple datasets
-    from gemclus.mlp import MLPModel
-    from sklearn.datasets import load_iris
-    X,y = load_iris(return_X_y=True)
+The MMD and Wasserstein GEMINIs are a bit more special because they required a kernel (resp. a distance). It is
+possible to use any kernel/distance in scikit-learn.
 
-    # Fit GEMINI clustering
-    model = MLPModel(n_clusters=3, gemini="mmd_ova").fit(X)
-    model.predict(X)
+.. code-block:: python
 
-.. note::
-    At the moment, and as reported in [1]_, GEMINI models may converge to using fewer clusters than asked in the models.
-    It is thus a good practice to get models to run several times and get a good merge of the results.
+    # Create OvA Wasserstein GEMINI with manhattan distance
+    objective = gemini.WassersteinGEMINI(metric="manhattan")
 
-For the details of the available models and GEMINI losses, you may check the `API reference <api.html>`_. Moreover, we
-give additional hints on how to derive your own model from the base classes in the `User Guide <user_guide.html>`_.
+It is further possible to pass parameters to this metric.  For example, if we use an RBF kernel in the MMD GEMINI,
+we would like to set the scale parameter, named
+`gamma <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.rbf_kernel.html>`_ in scikit-learn.
 
-Selecting features in clustering
-==================================
+.. code-block:: python
 
-We further propose an improvement of the GEMINI clustering to bring feature selection. This is mainly inspired from
-[2]_ and was proposed in [3]_. If you feel interested in feature selection, take a look at our
-`sparse models <api.html#sparse-models>`_ or `tree models <api.html#tree-models>`_.
+    # Set gamma parameter to 2 in rbf kernel
+    objective = gemini.MMDGEMINI(kernel="rbf", kernel_params={"gamma":2})
 
-References
-===========
-.. [1] Ohl, L., Mattei, P.-A., Bouveyron, C., Harchaoui, W., Leclercq, M., Droit, A., & Precioso, F. (2022).
-    `Generalised Mutual Information for Discriminative Clustering <https://openreview.net/pdf?id=0Oy3PiA-aDp>`_.
-    In A. H. Oh, A. Agarwal, D. Belgrave, & K. Cho (Eds.), Advances in Neural Information Processing Systems.
+If a kernel or a distance cannot among those proposed by default, it can be passed as an argument to the `fit` method.
+To that end, the value "precomputed" must be passed to the `kernel` or `metric` argument.
 
-.. [2] Lemhadri, I., Ruan, F., Abraham, L., & Tibshirani, R. (2021). `LassoNet: A Neural Network with Feature Sparsity
-    <https://lassonet.ml/>`_. Journal of Machine Learning Research, 22(127), 1–29.
+.. code-block:: python
 
-.. [3] Ohl, L., Mattei, P.-A., Bouveyron, C., Leclercq, M., Droit, A., & Precioso, F. (2023).
-    `Sparse GEMINI for Joint Discriminative Clustering and Feature Selection <https://arxiv.org/abs/2302.03391>`_.
-    arXiv: 2302.03391
+    # We use a pre-computed kernel in the objective
+    objective = gemini.MMDGEMINI(kernel="precomputed")
+    # So we pass the custom kernel inside the fit method
+    model = linear.LinearModel(gemini=objective)
+    model.fit(X, precomputed_kernel)
 
-.. [4] Ohl L., Mattei P.-A., Leclercq M., Droit A., Precioso F. (2024).
-    `Kernel KMeans clustering splits for end-to-end unsupervised decision trees <https://arxiv.org/abs/2402.12232>`_
-    arXiv: 2402.12232
+To simplify the above code when using MMD or Wasserstein distance in GEMINI, we propose models that directly incorporate
+those GEMINIs in their constructor.  These specific models have the word `Model` replaced by `MMD`or `Wasserstein` in
+their name, e.g. :class:`gemini.linear.LinearMMD` or :class:`gemini.mlp.MLPWasserstein`.
+
+.. code-block:: python
+
+    # Define a logistic regression trained by OvO MMD GEMINI
+    model = linear.LinearMMD(ovo=True, kernel="rbf", kernel_params={"gamma":2})
+    # Define a mlp trained with OvA Wasserstein GEMINI on a custom metric
+    model = mlp.MLPWasserstein(metric="precomputed")
+
+
+Discriminative models can be easily incorporated in the GemClus framework using inheritance from the base model
+:class:`gemclus.base.DiscriminativeModel`. An example is given `here <auto_examples/_general/plot_custom_model.html>`_.

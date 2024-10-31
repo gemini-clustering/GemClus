@@ -22,19 +22,19 @@ class _FDivergence(_GEMINI, ABC):
 
 
 class KLGEMINI(_FDivergence):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one KL GEMINI.
 
     The one-vs-all version compares the KL divergence between a cluster distribution
     and the data distribution. It is the classical mutual information.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{KL}(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{KL}(p(x|y)\|p(x))]
 
     The one-vs-one version compares the KL divergence between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{KL}(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{KL}(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -84,12 +84,12 @@ class KLGEMINI(_FDivergence):
 
 
 class MI(KLGEMINI):
-    """
+    r"""
     Implements the classical mutual information between cluster conditional probabilities and the complete data
     probabilities:
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{KL}(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{KL}(p(x|y)\|p(x))]
 
     This class is a simplified shortcut for KLGEMINI(ovo=False).
 
@@ -104,19 +104,19 @@ class MI(KLGEMINI):
 
 
 class TVGEMINI(_FDivergence):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one Total Variation distance GEMINI.
 
     The one-vs-all version compares the total variation distance between a cluster distribution
     and the data distribution.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{TV}(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{TV}(p(x|y)\|p(x))]
 
     The one-vs-one version compares the TV distance between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{TV}(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{TV}(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -179,19 +179,19 @@ class TVGEMINI(_FDivergence):
 
 
 class HellingerGEMINI(_FDivergence):
-    """
+    r"""
     Implements the one-vs-all and one-vs-one Squared Hellinger distance GEMINI.
 
-    The one-vs-all version compares the squared Hellinger distance distance between a cluster distribution
+    The one-vs-all version compares the squared Hellinger distance between a cluster distribution
     and the data distribution.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\\text{H}^2(p(x|y)\|p(x))]
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[\text{H}^2(p(x|y)\|p(x))]
 
     The one-vs-one version compares the squared Hellinger distance between two cluster distributions.
 
     .. math::
-        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\\text{H}^2(p(x|y_a)\|p(x|y_b))]
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[\text{H}^2(p(x|y_a)\|p(x|y_b))]
 
     Parameters
     ----------
@@ -238,3 +238,73 @@ class HellingerGEMINI(_FDivergence):
             return hellinger_gemini, gradients * clip_mask
         else:
             return hellinger_gemini
+
+class ChiSquareGEMINI(_FDivergence):
+    r"""
+    Implements the one-vs-all and one-vs-one Chi Squared divergence GEMINI.
+
+    The one-vs-all version compares the chi square divergence between a cluster distribution
+    and the data distribution.
+
+    .. math::
+        \mathcal{I} = \mathbb{E}_{y \sim p(y)}[D_{\chi^2}(p(x|y)\|p(x))]
+
+    The one-vs-one version compares the chi square divergence between two cluster distributions.
+
+    .. math::
+        \mathcal{I} = \mathbb{E}_{y_a,y_b \sim p(y)}[D_{\chi^2}(p(x|y_a)\|p(x|y_b))]
+
+    Parameters
+    ----------
+    ovo: bool, default=False
+        Whether to use the one-vs-all objective (False) or the one-vs-one objective (True).
+
+    epsilon: float, default=1e-12
+        The precision for clipping the prediction values in order to avoid numerical instabilities.
+
+    References
+    ----------
+    Sugiyama, M., Yamada, M., Kimura, M., & Hachiya, H. (2011). On information-maximization clustering: Tuning
+    parameter selection and analytic solution. In Proceedings of the 28th International Conference on Machine
+    Learning (ICML-11) (pp. 65-72).
+
+    """
+
+    @constraint_params(
+        {
+            "ovo": [bool],
+            "epsilon": [Interval(Real, 0, 1, closed="neither")]
+        }
+    )
+    def __init__(self, ovo=False, epsilon=1e-12):
+        super().__init__(epsilon)
+        self.ovo = ovo
+
+    def evaluate(self, y_pred, affinity, return_grad=False):
+        # Use a clip mask for numerical stability in gradients
+        clip_mask = (y_pred > self.epsilon) & (y_pred < 1 - self.epsilon)
+        p_y_x = np.clip(y_pred, self.epsilon, 1 - self.epsilon)
+        p_y = p_y_x.mean(0)
+
+        cluster_wise_estimates = p_y_x / p_y
+        if self.ovo:
+            alpha = np.sum(p_y_x*cluster_wise_estimates, axis=1, keepdims=True)
+            beta = np.sum(p_y/cluster_wise_estimates, axis=1, keepdims=True)
+            chi2_gemini = np.mean(alpha*beta)
+        else:
+            chi2_gemini = np.sum(p_y_x*cluster_wise_estimates, axis=1).mean()
+
+        if return_grad:
+            if self.ovo:
+                single_beta = beta * cluster_wise_estimates
+                double_beta = single_beta * cluster_wise_estimates
+                single_alpha = alpha / cluster_wise_estimates
+                double_alpha = single_alpha / cluster_wise_estimates
+
+                gradients = 2*single_beta-double_alpha  + np.mean(2*single_alpha-double_beta, axis=0)
+            else:
+                gradients = (2*cluster_wise_estimates-np.square(cluster_wise_estimates).mean(0))
+            gradients /= y_pred.shape[0]
+            return 0.5*chi2_gemini, 0.5*gradients * clip_mask
+        else:
+            return 0.5*chi2_gemini

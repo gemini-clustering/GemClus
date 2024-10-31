@@ -2,8 +2,6 @@
 GemClus API
 ####################
 
-The GEMINI-clustering package currently contains simple MLP and logistic regression for all-feature clustering as well as
-sparsity-constrained variants of these models.
 
 .. currentmodule:: gemclus
 
@@ -23,6 +21,7 @@ clustering.
     gemini.KLGEMINI
     gemini.TVGEMINI
     gemini.HellingerGEMINI
+    gemini.ChiSquareGEMINI
 
 Clustering models
 ==================

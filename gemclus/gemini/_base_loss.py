@@ -11,8 +11,8 @@ class _GEMINI(ABC):
 
     @abstractmethod
     def evaluate(self, y_pred, affinity, return_grad=False):
-        """
-        Compute the GEMINI objective given the predictions :math:`$p(y|x)$` and an affinity matrix. The
+        r"""
+        Compute the GEMINI objective given the predictions :math:`p(y|x)` and an affinity matrix. The
         computation must return as well the gradients of the GEMINI w.r.t. the predictions. Depending on the context,
         the affinity matrix `affinity` can be either a kernel matrix or a distance matrix resulting from the
         `compute_affinity` method.
@@ -24,7 +24,7 @@ class _GEMINI(ABC):
         affinity: ndarray of shape (n_samples, n_samples)
             The affinity matrix resulting from the `compute_affinity` method. The matrix must be symmetric.
         return_grad: bool, default=False
-            If True, the method should return the gradient of the GEMINI w.r.t. the predictions :math:`$p(y|x)$`.
+            If True, the method should return the gradient of the GEMINI w.r.t. the predictions :math:`p(y|x)`.
 
         Returns
         -------
@@ -32,7 +32,7 @@ class _GEMINI(ABC):
             The gemini score of the model given the predictions and affinities.
 
         gradients: ndarray of shape (n_samples, n_clusters)
-            The derivative w.r.t. the predictions `y_pred`: :math:`$\\nabla_{p (y|x)} \mathcal{I} $`
+            The derivative w.r.t. the predictions `y_pred`: :math:`\nabla_{p (y|x)} \mathcal{I}`
         """
         pass
 

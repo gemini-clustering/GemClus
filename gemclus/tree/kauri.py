@@ -242,7 +242,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
                                          self.max_clusters,
                                          n_leaves,
                                          self.min_samples_leaf,
-                                         random_state.choice(X.shape[1], size=max_features, replace=False))
+                                         random_state.choice(X.shape[1], size=max_features, replace=False).astype(np.intp))
 
             last_gain = best_split.gain
 

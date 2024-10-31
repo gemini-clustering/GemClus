@@ -1,4 +1,4 @@
-from ._fdivergences import MI, KLGEMINI, TVGEMINI, HellingerGEMINI
+from ._fdivergences import MI, KLGEMINI, TVGEMINI, HellingerGEMINI, ChiSquareGEMINI
 from ._geomdistances import MMDGEMINI, WassersteinGEMINI
 
 
@@ -25,7 +25,11 @@ def _str_to_gemini(gemini_str):
         return HellingerGEMINI()
     elif gemini_str == "hellinger_ovo":
         return HellingerGEMINI(ovo=True)
+    elif gemini_str == "chi2_ova":
+        return ChiSquareGEMINI()
+    elif gemini_str == "chi2_ovo":
+        return ChiSquareGEMINI(ovo=True)
 
 
 AVAILABLE_GEMINIS = ["mmd_ova", "mmd_ovo", "wasserstein_ova", "wasserstein_ovo", "kl_ova", "kl_ovo", "mi", "tv_ova",
-                     "tv_ovo", "hellinger_ova",  "hellinger_ovo"]
+                     "tv_ovo", "hellinger_ova",  "hellinger_ovo", "chi2_ova", "chi2_ovo"]

@@ -76,7 +76,7 @@ def _check_linking_constraint(must_link=None, cannot_link=None):
     "factor": [Interval(Real, 0, None, closed="neither")]
 })
 def add_mlcl_constraint(gemini_model, must_link=None, cannot_link=None, factor=1.0):
-    """
+    r"""
     Adds must-link and/or cannot-link constraints to a discriminative clustering model. The contraints are ensure by
     respectively minimising or maximising the :math:`\ell_2` norm between the prediction vectors. It is thus possible
     that not all constraints are fully satisfied.
