@@ -22,7 +22,7 @@ The official source code can be found here: [https://github.com/gemini-clusterin
 
 Use the following instruction for installing the package:
 
-```commandline
+```
 pip install gemclus
 ```
 
@@ -37,13 +37,13 @@ The library requires a couple scientific package to run:
 
 You may download the latest version of the package by installing the content of the repo.
 
-```commandline
+```
 git clone https://github.com/gemini-clustering/GemClus
 cd GemClus
 pip install .
 ```
 
-## Reference
+## Related paper
 
 If this work helped you, please cite our original NeurIPS work:
 
