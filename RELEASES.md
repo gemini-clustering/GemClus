@@ -1,6 +1,11 @@
 # History of changes
 
-## In development
+## In development (1.1.0)
+
++ Updating documentation introduction of the package
++ Added the chi square divergence in GEMINIs: `gemclus.gemini.ChiSquareGEMINI`
++ Changed `gemclus.linear.KernelRIM` implementation to directly depend on linear models.
++ Fixing compatibility with numpy>=2
 
 ## 1.0.0 (Latest)
 
