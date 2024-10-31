@@ -145,7 +145,7 @@ discriminative clustering.
     * - :class:`gemclus.linear.RIM`, :class:`gemclus.linear.KernelRIM`
       - Krause, Perona and Gomes [3]_
     * - :class:`gemclus.sparse.SparseLinearMI`
-      - França, Rizzo and Vogelstein [5]_
+      - Kong, Deng, and Dai [5]_
     * - :class:`gemclus.tree.Kauri`
       - Ohl et al [11]_
     * - :class:`sparse.SparseMLPModel`
@@ -163,7 +163,7 @@ discriminative clustering.
         :class:`gemclus.gemini.HellingerGEMINI`
       - Ohl et al [9]_
     * - :class:`gemclus.gemini.MMDGEMINI`
-      - Ohl et al [9]_, [7]_
+      - Ohl et al [9]_, França, Rizzo and Vogelstein [7]_
     * - :class:`gemclus.gemini.MI`
       - Bridle, Heading and MacKay [1]_
     * - :class:`gemclus.gemini.ChiSquareGEMINI`
