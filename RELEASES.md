@@ -1,13 +1,13 @@
 # History of changes
 
-## In development (1.1.0)
+## 1.1.0 (Latest)
 
 + Updating documentation introduction of the package
 + Added the chi square divergence in GEMINIs: `gemclus.gemini.ChiSquareGEMINI`
 + Changed `gemclus.linear.KernelRIM` implementation to directly depend on linear models.
 + Fixing compatibility with numpy>=2
 
-## 1.0.0 (Latest)
+## 1.0.0
 
 + Adding the kernelised version of RIM with: `KernelRIM`
 + Adding the dynamic version of paths for feature selection in sparse models. A simply argument `dynamic=True` activates the dynamic mode.
