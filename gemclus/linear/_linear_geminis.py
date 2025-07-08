@@ -7,7 +7,7 @@ from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, PAIRWISE_DISTANC
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
 from sklearn.utils._param_validation import Interval, StrOptions
 from sklearn.utils.extmath import softmax
-from sklearn.utils.validation import check_is_fitted, check_array
+from sklearn.utils.validation import check_is_fitted, check_array, validate_data
 
 from .._base_gemini import DiscriminativeModel
 from ..gemini import MMDGEMINI, WassersteinGEMINI
@@ -579,5 +579,7 @@ class KernelRIM(LinearModel):
 
 
     def predict_proba(self, X):
+        check_is_fitted(self)
+        X = validate_data(self, X, accept_sparse=False, reset=False)
         kernel = self._compute_kernel(X)
         return self._infer(kernel)

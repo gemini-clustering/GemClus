@@ -8,9 +8,9 @@ from numbers import Integral, Real
 import numpy as np
 from sklearn.base import ClusterMixin, BaseEstimator
 from sklearn.neural_network._stochastic_optimizers import AdamOptimizer, SGDOptimizer
-from sklearn.utils import check_array, check_random_state
+from sklearn.utils import check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from gemclus.gemini import AVAILABLE_GEMINIS
 from .gemini._base_loss import _GEMINI
@@ -230,8 +230,7 @@ class DiscriminativeModel(ClusterMixin, BaseEstimator, ABC):
         self._validate_params()
 
         # Check that X has the correct shape
-        X = check_array(X)
-        X = self._validate_data(X, accept_sparse=True, dtype=np.float64, ensure_min_samples=self.n_clusters)
+        X = validate_data(self, X, accept_sparse=False, dtype=np.float64, ensure_min_samples=self.n_clusters)
 
         # Fix the random seed
         random_state = check_random_state(self.random_state)
@@ -314,7 +313,7 @@ class DiscriminativeModel(ClusterMixin, BaseEstimator, ABC):
         check_is_fitted(self)
 
         # Input validation
-        X = check_array(X)
+        X = validate_data(self, X, accept_sparse=False, dtype=np.float64, reset=False)
 
         y_pred = self._infer(X, retain=False)
         return y_pred
@@ -337,7 +336,7 @@ class DiscriminativeModel(ClusterMixin, BaseEstimator, ABC):
         check_is_fitted(self)
 
         # Input validation
-        X = check_array(X)
+        X = validate_data(self, X, accept_sparse=True, dtype=np.float64, reset=False)
 
         return np.argmax(self.predict_proba(X), axis=1)
 

@@ -1,6 +1,10 @@
 # History of changes
 
-## 1.1.0 (Latest)
+## 1.1.1 (Latest)
+
++ Minor bug fix to ensure that all prediction calls can be carried.
+
+## 1.1.0
 
 + Updating documentation introduction of the package
 + Added the chi square divergence in GEMINIs: `gemclus.gemini.ChiSquareGEMINI`

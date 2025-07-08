@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS
 from sklearn.neural_network._stochastic_optimizers import SGDOptimizer
 from sklearn.utils._param_validation import Interval, StrOptions
+from sklearn.utils.validation import validate_data
 
 from ._base_sparse import _path, check_groups
 from ._prox_grad import linear_prox_grad, group_linear_prox_grad
@@ -151,7 +152,7 @@ class SparseLinearModel(LinearModel):
         return np.linalg.norm(self.W_, axis=1, ord=2).sum()
 
     def fit(self, X, y=None):
-        self._validate_data(X)
+        X = validate_data(self, X, accept_sparse=False, dtype=np.float64)
         self.groups_ = check_groups(self.groups, X.shape[1])  # Intercept to check that group forms a partition
         return super().fit(X, y)
 
