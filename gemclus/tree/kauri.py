@@ -9,7 +9,7 @@ from sklearn.base import ClusterMixin, BaseEstimator
 from sklearn.metrics.pairwise import PAIRWISE_KERNEL_FUNCTIONS, pairwise_kernels
 from sklearn.utils import check_array, check_random_state
 from sklearn.utils._param_validation import Interval, StrOptions
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 from ._utils import find_best_split, gemini_objective, Split
 from .._constraints import constraint_params
@@ -187,8 +187,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
         self._validate_params()
 
         # Check that X has the correct shape
-        X = check_array(X)
-        X = self._validate_data(X, accept_sparse=True, dtype=np.float64, ensure_min_samples=self.min_samples_leaf)
+        X = validate_data(self, X, accept_sparse=False, dtype=np.float64, ensure_min_samples=self.min_samples_leaf)
 
         # Create the random state
         random_state = check_random_state(self.random_state)
@@ -352,7 +351,7 @@ class Kauri(ClusterMixin, BaseEstimator, ABC):
         check_is_fitted(self)
 
         # Input validation
-        X = check_array(X)
+        X = validate_data(self, X, accept_sparse=False, reset=False)
 
         return self.tree_.predict(X)
 
