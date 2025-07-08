@@ -5,4 +5,4 @@ from ._base_gemini import DiscriminativeModel
 __all__ = ['linear', 'mlp', 'sparse', 'data', 'nonparametric', 'gemini', 'tree', 'add_mlcl_constraint',
            '__version__', 'DiscriminativeModel']
 
-__version__ = '1.1.0'
+__version__ = '1.1.1'
